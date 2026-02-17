@@ -1,0 +1,143 @@
+* {
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+    font-family: Geneva, "Lucida Grande", Tahoma, sans-serif;
+}
+
+:root {
+    /* Brand */
+    --accent: #4361ee;
+    --accent-hover: #3451d1;
+    --danger: #ef4444;
+    --danger-hover: #dc2626;
+
+    /* Neutrals - Home (light) */
+    --btn-primary: slateblue;
+    --btn-primary-hover: darkslateblue;
+
+    /* Neutrals - Room (dark) */
+    --bg-base: #0b0c10;
+    --bg-surface: #13141a;
+    --bg-card: #1a1b24;
+    --bg-raised: #22232e;
+    --bg-hover: #2a2b3a;
+    --text-1: #f0f0f4;
+    --text-2: #9ca3af;
+    --text-3: #5c6370;
+    --border: rgba(255, 255, 255, 0.07);
+    --border-2: rgba(255, 255, 255, 0.12);
+
+    /* Radii */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 18px;
+    --radius-pill: 9999px;
+}
+
+/* ── Utility ── */
+.center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* ── Base button (home page) ── */
+button {
+    border: none;
+    background-color: var(--btn-primary);
+    color: white;
+    padding: 10px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-family: Geneva, "Lucida Grande", Tahoma, sans-serif;
+}
+
+button:hover {
+    background-color: var(--btn-primary-hover);
+}
+
+/* ── Shared nav logo ── */
+.nav-logo-img {
+    width: 30px;
+    height: 30px;
+}
+
+/* ── Top-bar buttons (room page) ── */
+.tb-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 14px;
+    border-radius: var(--radius-pill);
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition:
+        background 0.16s,
+        color 0.16s;
+}
+
+.tb-btn-ghost {
+    background: var(--bg-card);
+    color: var(--text-2);
+    border: 1px solid var(--border-2);
+}
+.tb-btn-ghost:hover {
+    background: var(--bg-hover);
+    color: var(--text-1);
+}
+
+.tb-btn-danger {
+    background: var(--danger);
+    color: white;
+}
+.tb-btn-danger:hover {
+    background: var(--danger-hover);
+}
+
+/* ── Control buttons (room page) ── */
+.ctrl-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-2);
+    border-radius: var(--radius-md);
+    padding: 9px 14px;
+    cursor: pointer;
+    min-width: 58px;
+    font-size: 0.6rem;
+    color: var(--text-2);
+    font-weight: 500;
+    transition: all 0.16s;
+}
+.ctrl-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-1);
+    transform: translateY(-1px);
+}
+.ctrl-btn.active {
+    background: rgba(67, 97, 238, 0.15);
+    border-color: rgba(67, 97, 238, 0.35);
+    color: var(--accent);
+}
+.ctrl-btn.off {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: var(--danger);
+}
+.ctrl-btn.end {
+    background: var(--danger);
+    border-color: transparent;
+    color: white;
+    padding: 9px 20px;
+    box-shadow: 0 3px 12px rgba(239, 68, 68, 0.3);
+}
+.ctrl-btn.end:hover {
+    background: var(--danger-hover);
+    box-shadow: 0 5px 18px rgba(239, 68, 68, 0.4);
+}

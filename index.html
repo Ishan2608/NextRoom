@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Next Room</title>
+        <link rel="stylesheet" href="./public/styles/globals.css" />
+        <link rel="stylesheet" href="./public/styles/index.css" />
+        <script
+            src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"
+            integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g=="
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer"
+        ></script>
+    </head>
+    <body>
+        <nav class="home-nav">
+            <div class="home-nav-left">
+                <img
+                    class="nav-logo-img"
+                    src="./public/assets/logo.png"
+                    alt="Logo of Next Room"
+                />
+                <p>Next Room</p>
+            </div>
+            <div class="home-nav-right">
+                <button>Sign In</button>
+                <button class="join-meeting-button">Join Meeting</button>
+            </div>
+        </nav>
+
+        <main>
+            <div class="home-left">
+                <h1 class="txt-xl">Welcome to Next Room</h1>
+                <p>
+                    Connect to dozens, even hundreds of users, share audio,
+                    video and chat, all in a secured channel.
+                </p>
+                <div class="home-main-buttons">
+                    <button id="new-meeting-btn">New Meeting</button>
+                    <input
+                        type="text"
+                        name="meet-code"
+                        id="meet-code"
+                        placeholder="Enter meeting code."
+                    />
+                    <button id="join-action-button">Join</button>
+                </div>
+            </div>
+            <div class="home-right">
+                <img
+                    src="./public/assets/home-main-graphic.jpg"
+                    alt="Home Main Graphic"
+                    id="home-main-graphic"
+                />
+            </div>
+        </main>
+
+        <script>
+            $(function () {
+                $(document).on("click", ".join-meeting-button", function () {
+                    $("#meet-code").focus();
+                });
+                $(document).on("click", "#join-action-button", function () {
+                    const code = $("#meet-code").val();
+                    if (code) {
+                        const meetingURL =
+                            window.location.origin + "?meetingID=" + code;
+                        window.location.href = meetingURL;
+                        alert(meetingURL);
+                    } else {
+                        alert("Please enter a valid meeting code.");
+                        return;
+                    }
+                });
+                $(document).on("click", "#new-meeting-btn", function () {
+                    const code = Math.floor(Math.random() * 1000000);
+                    const meetingURL =
+                        window.location.origin + "?meetingID=" + code;
+                    alert(meetingURL);
+                });
+            });
+        </script>
+    </body>
+</html>
