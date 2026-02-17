@@ -14,6 +14,8 @@
         ></script>
     </head>
     <body>
+
+        <!-- NAV -->
         <nav class="home-nav">
             <div class="home-nav-left">
                 <img
@@ -29,31 +31,108 @@
             </div>
         </nav>
 
+        <!-- MAIN -->
         <main>
+
+            <!-- LEFT: Content -->
             <div class="home-left">
-                <h1 class="txt-xl">Welcome to Next Room</h1>
-                <p>
-                    Connect to dozens, even hundreds of users, share audio,
-                    video and chat, all in a secured channel.
+
+                <span class="home-badge">
+                    <span class="home-badge-dot"></span>
+                    Live &amp; Encrypted
+                </span>
+
+                <h1 class="txt-xl">
+                    Meet Without Limits.<br>
+                    <span class="accent-word">Connect</span> Instantly.
+                </h1>
+
+                <p class="home-sub">
+                    HD video meetings for your team. No downloads, no friction
+                    — just instant, secure collaboration.
                 </p>
+
                 <div class="home-main-buttons">
-                    <button id="new-meeting-btn">New Meeting</button>
-                    <input
-                        type="text"
-                        name="meet-code"
-                        id="meet-code"
-                        placeholder="Enter meeting code."
-                    />
-                    <button id="join-action-button">Join</button>
+                    <button id="new-meeting-btn">+ New Meeting</button>
+                    <div class="join-code-group">
+                        <input
+                            type="text"
+                            name="meet-code"
+                            id="meet-code"
+                            placeholder="Enter meeting code"
+                        />
+                        <button id="join-action-button">Join</button>
+                    </div>
+                </div>
+
+                <div class="home-features">
+                    <span class="feat-pill">End-to-end encrypted</span>
+                    <span class="feat-pill">Up to 500 participants</span>
+                    <span class="feat-pill">No account needed</span>
+                </div>
+
+            </div>
+
+            <!-- RIGHT: Mock video card -->
+            <div class="home-right">
+                <div class="home-graphic-card">
+
+                    <div class="card-bar">
+                        <div class="card-bar-dots">
+                            <div class="card-dot"></div>
+                            <div class="card-dot"></div>
+                            <div class="card-dot"></div>
+                        </div>
+                        <span class="card-bar-label">Next Room · 4 participants</span>
+                        <div class="card-rec">
+                            <div class="card-rec-dot"></div>
+                            REC
+                        </div>
+                    </div>
+
+                    <div class="card-grid">
+                        <div class="card-tile">
+                            <div class="tile-avatar av-1">AJ</div>
+                            <span class="tile-name">Alex J. (Host)</span>
+                        </div>
+                        <div class="card-tile">
+                            <div class="tile-avatar av-2">SM</div>
+                            <span class="tile-name">Sara M.</span>
+                        </div>
+                        <div class="card-tile">
+                            <div class="tile-avatar av-3">KP</div>
+                            <span class="tile-name">Kai P.</span>
+                        </div>
+                        <div class="card-tile">
+                            <div class="tile-avatar av-4">RO</div>
+                            <span class="tile-name">R. Ortiz</span>
+                        </div>
+                    </div>
+
+                    <div class="card-footer">
+                        <div class="card-ctrl">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/>
+                                <path d="M19 10v2a7 7 0 01-14 0v-2"/>
+                            </svg>
+                        </div>
+                        <div class="card-ctrl">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M23 7l-7 5 7 5V7z"/>
+                                <rect x="1" y="5" width="15" height="14" rx="2"/>
+                            </svg>
+                        </div>
+                        <div class="card-ctrl danger">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                                <path d="M10.68 13.31a16 16 0 003.41 2.6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7 2 2 0 011.72 2v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07C9.44 18.01 8 16.57 6.7 14.91a19.79 19.79 0 01-3.07-8.63A2 2 0 015.61 4h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L10.68 13.31z"/>
+                                <line x1="23" y1="1" x2="1" y2="23"/>
+                            </svg>
+                        </div>
+                    </div>
+
                 </div>
             </div>
-            <div class="home-right">
-                <img
-                    src="./public/assets/home-main-graphic.jpg"
-                    alt="Home Main Graphic"
-                    id="home-main-graphic"
-                />
-            </div>
+
         </main>
 
         <script>
@@ -81,5 +160,6 @@
                 });
             });
         </script>
+
     </body>
 </html>
