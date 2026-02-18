@@ -12,17 +12,20 @@
             crossorigin="anonymous"
             referrerpolicy="no-referrer"
         ></script>
+        <script src="./public/js/app.js"></script>
         <script>
             $(function () {
                 const urlParams = new URLSearchParams(window.location.search);
                 const roomID = urlParams.get("roomID");
                 var userName = window.prompt("Enter Your Name");
-                if (userName || roomID) {
+                if (!userName || !roomID) {
                     alert("User ID or Room ID missing");
                     window.location.href = "index.html";
                     return;
                 }
             });
+
+            MyApp._init(userName, roomID);
         </script>
     </head>
     <body class="room-page">

@@ -169,10 +169,12 @@
                 $(document).on("click", "#join-action-button", function () {
                     const code = $("#meet-code").val();
                     if (code) {
-                        const meetingURL =
-                            window.location.origin + "?meetingID=" + code;
-                        window.location.href = meetingURL;
-                        alert(meetingURL);
+                        const param = `?roomID=${code}`;
+                        // Construct the relative path to room.html
+                        const targetURL = `room.html${param}`;
+                        // Optional: Log to verify the path before redirecting
+                        console.log("Redirecting to:", targetURL);
+                        window.location.href = targetURL;
                     } else {
                         alert("Please enter a valid meeting code.");
                         return;
