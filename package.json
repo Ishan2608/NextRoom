@@ -1,0 +1,20 @@
+{
+  "name": "next-room",
+  "version": "1.0.0",
+  "description": "Google Meet Clone built for practicing WebRTC and WebSocket",
+  "homepage": "https://github.com/Ishan2608/NextRoom#readme",
+  "bugs": {
+    "url": "https://github.com/Ishan2608/NextRoom/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Ishan2608/NextRoom.git"
+  },
+  "license": "ISC",
+  "author": "Ishan2608",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
