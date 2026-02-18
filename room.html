@@ -12,22 +12,30 @@
             crossorigin="anonymous"
             referrerpolicy="no-referrer"
         ></script>
+        <script
+            src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.8.1/socket.io.js"
+            integrity="sha512-8BHxHDLsOHx+flIrQ0DrZcea7MkHqRU5GbTHmbdzMRnAaoCIkZ97PqZcXJkKZckMMhqfoeaJE+DNUVuyoQsO3Q=="
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer"
+        ></script>
         <script src="./public/js/app.js"></script>
         <script>
+            var roomID, userID, userName; // Declare in global scope
+        </script>
+        <script>
             $(function () {
+                $(".room-page").hide();
                 const urlParams = new URLSearchParams(window.location.search);
-                const roomID = urlParams.get("roomID");
-                var userName = window.prompt("Enter Your Name");
+                roomID = urlParams.get("roomID");
+                userName = window.prompt("Enter Your Name");
                 if (!userName || !roomID) {
                     alert("User ID or Room ID missing");
                     window.location.href = "index.html";
                     return;
-                } else {
-                    $(".room-page").show();
                 }
+                $(".room-page").show();
+                MyApp._init(userName, roomID); // Move init call inside the ready block
             });
-
-            MyApp._init(userName, roomID);
         </script>
     </head>
     <body class="room-page">
@@ -45,7 +53,7 @@
                 <p class="elapsed-time">00:00:00</p>
             </div>
             <div id="room-tb-right">
-                <button class="tb-btn tb-btn-ghost">
+                <button class="tb-btn tb-btn-ghost share-room-btn">
                     <svg
                         width="11"
                         height="11"
@@ -262,4 +270,9 @@
             </div>
         </main>
     </body>
+    <script>
+        $(document).on("click", ".share-room-btn", function () {
+            alert(`Share Button Clicked = ${roomID}`);
+        });
+    </script>
 </html>
