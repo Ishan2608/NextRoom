@@ -1,4 +1,4 @@
-var MyApp = function () {
+var MyApp = (function () {
   function init(uid, roomID) {}
 
   return {
@@ -6,4 +6,4 @@ var MyApp = function () {
       init(uid, roomID);
     },
   };
-};
+})();
