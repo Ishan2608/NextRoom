@@ -60,7 +60,10 @@ var MyApp = (function () {
             displayName: userID,
             roomID: roomID,
           });
-
+          $("#pinned-pic").attr("src", "https://example.com/user-avatar.jpg");
+          $("#pinned-name").text(userID);
+          // $('#pinned-video').attr('src', 'https://example.com/user-video.mp4');
+          // $('#pinned-audio').attr('src', 'https://example.com/user-audio.mp3');
           console.log("userconnect event emitted");
         } else {
           console.error(
