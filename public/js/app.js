@@ -91,6 +91,17 @@ var AppProcess = (function () {
       var answer = await peers_connections[from_connId].createAnswer();
       await peers_connections[from_connId].setLocalDescription(answer);
       serverProcess(JSON.stringify({ answer: answer }), from_connId);
+    } else if (message.icecandidate) {
+      if (peers_connections[from_connId]) {
+        await setConnection(from_connId);
+      }
+      try {
+        await peers_connections[from_connId].addIceCandidate(
+          message.icecandidate,
+        );
+      } catch (error) {
+        console.error("Error adding ICE candidate:", error);
+      }
     }
   }
   return {
