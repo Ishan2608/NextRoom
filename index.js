@@ -51,4 +51,11 @@ io.on("connection", (socket) => {
       });
     });
   });
+
+  socket.on("SDP_Process", (data) => {
+    socket.to(data.to_connId).emit("SDP_Process", {
+      message: data.message,
+      from_connId: socket.id,
+    });
+  });
 });

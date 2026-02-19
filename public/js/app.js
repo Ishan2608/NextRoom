@@ -69,7 +69,29 @@ var AppProcess = (function () {
     var connection = peers_connections[connId];
     var offer = await connection.createOffer();
     await connection.setLocalDescription(offer);
-    serverProcess(JSON.stringify({ offer: offer }), connId);
+    serverProcess(
+      JSON.stringify({ offer: connection.localDescription }),
+      connId,
+    );
+  }
+
+  async function SDP_Process(message, from_connId) {
+    message = JSON.parse(message);
+    if (message.answer) {
+      await peers_connections[from_connId].setRemoteDescription(
+        new RTCSessionDescription(message.answer),
+      );
+    } else if (message.offer) {
+      if (!peers_connections[from_connId]) {
+        await setConnection(from_connId);
+      }
+      await peers_connections[from_connId].setRemoteDescription(
+        new RTCSessionDescription(message.offer),
+      );
+      var answer = await peers_connections[from_connId].createAnswer();
+      await peers_connections[from_connId].setLocalDescription(answer);
+      serverProcess(JSON.stringify({ answer: answer }), from_connId);
+    }
   }
   return {
     setNewConnection: async function (conn_id) {
@@ -78,6 +100,9 @@ var AppProcess = (function () {
     // We get these params from MyApp, since it communcates with the Server.
     init: async function (SDP_function, myconn_id) {
       await _init(SDP_function, myconn_id);
+    },
+    processClientFunction: async function (message, from_connId) {
+      await SDP_Process(message, from_connId);
     },
   };
 })();
@@ -132,7 +157,7 @@ var MyApp = (function () {
     var SDP_function = function (data, to_conn_id) {
       socket.emit("SDP_Process", {
         message: data,
-        to_connid: to_conn_id,
+        to_connId: to_conn_id,
       });
     };
 
@@ -176,6 +201,10 @@ var MyApp = (function () {
       addUser(data.other_user_id, data.conn_id);
       // To establish connection between users without server
       AppProcess.setNewConnection(data.conn_id);
+    });
+
+    socket.on("SDP_Process", async function (data) {
+      await AppProcess.processClientFunction(data.message, data.from_connId);
     });
 
     socket.on("connect_error", (error) => {
