@@ -12,14 +12,14 @@ var AppProcess = (function () {
     ],
   };
 
-  function _init(SDP_function, myconn_id) {
+  async function _init(SDP_function, myconn_id) {
     console.log("Initializing AppProcess...");
     serverProcess = SDP_function;
     my_connection_id = myconn_id;
     // Initialize any necessary variables or resources here
   }
 
-  function setConnection(conn_id) {
+  async function setConnection(conn_id) {
     console.log("Setting Connection with Peer: " + conn_id);
     var connection = new RTCPeerConnection(iceConfig);
 
