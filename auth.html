@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Sign In | Next Room</title>
+        <link rel="stylesheet" href="./public/styles/globals.css" />
+        <link rel="stylesheet" href="./public/styles/index.css" />
+        <script
+            src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.8.1/socket.io.js"
+            integrity="sha512-8BHxHDLsOHx+flIrQ0DrZcea7MkHqRU5GbTHmbdzMRnAaoCIkZ97PqZcXJkKZckMMhqfoeaJE+DNUVuyoQsO3Q=="
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer"
+        ></script>
+        <script src="./public/js/app.js"></script>
+    </head>
+    <body class="auth-page">
+        <div class="auth-container">
+            <!-- LEFT: Form Column -->
+            <div class="auth-left">
+                <!-- Logo top-left -->
+                <div class="auth-brand">
+                    <img
+                        class="nav-logo-img"
+                        src="./public/assets/logo.png"
+                        alt="Logo of Next Room"
+                    />
+                    <span>Next Room</span>
+                </div>
+
+                <!-- Form content wrapper -->
+                <div class="auth-form-wrap">
+                    <!-- Toggle tabs -->
+                    <div class="auth-tabs">
+                        <button
+                            type="button"
+                            class="auth-tab active"
+                            id="btn-signin"
+                        >
+                            Sign In
+                        </button>
+                        <button type="button" class="auth-tab" id="btn-signup">
+                            Sign Up
+                        </button>
+                    </div>
+
+                    <!-- Sign In Form -->
+                    <form class="auth-form signin-form" id="signin-form">
+                        <h1>Welcome back</h1>
+                        <p class="auth-subtitle">
+                            Enter your credentials to access your account
+                        </p>
+
+                        <div class="form-group">
+                            <label for="signin-email">Email</label>
+                            <input
+                                type="email"
+                                id="signin-email"
+                                name="email"
+                                placeholder="you@example.com"
+                                required
+                            />
+                        </div>
+
+                        <div class="form-group">
+                            <label for="signin-password">Password</label>
+                            <input
+                                type="password"
+                                id="signin-password"
+                                name="password"
+                                placeholder="••••••••"
+                                required
+                            />
+                        </div>
+
+                        <div class="form-row">
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="remember" />
+                                <span>Remember me</span>
+                            </label>
+                            <a href="#" class="link-text">Forgot password?</a>
+                        </div>
+
+                        <button type="submit" class="auth-btn-primary">
+                            Sign In
+                        </button>
+
+                        <div class="auth-footer">
+                            Don't have an account?
+                            <label for="tab-signup" class="link-text"
+                                >Sign up</label
+                            >
+                        </div>
+                    </form>
+
+                    <!-- Sign Up Form -->
+                    <form class="auth-form signup-form" id="signup-form">
+                        <h1>Create account</h1>
+                        <p class="auth-subtitle">
+                            Get started with Next Room in seconds
+                        </p>
+
+                        <div class="form-group">
+                            <label for="signup-name">Full Name</label>
+                            <input
+                                type="text"
+                                id="signup-name"
+                                name="fullname"
+                                placeholder="John Doe"
+                                required
+                            />
+                        </div>
+
+                        <div class="form-group">
+                            <label for="signup-email">Email</label>
+                            <input
+                                type="email"
+                                id="signup-email"
+                                name="email"
+                                placeholder="you@example.com"
+                                required
+                            />
+                        </div>
+
+                        <div class="form-group">
+                            <label for="signup-password">Password</label>
+                            <input
+                                type="password"
+                                id="signup-password"
+                                name="password"
+                                placeholder="••••••••"
+                                required
+                            />
+                        </div>
+
+                        <div class="form-group">
+                            <label for="signup-password-confirm"
+                                >Confirm Password</label
+                            >
+                            <input
+                                type="password"
+                                id="signup-password-confirm"
+                                name="password_confirm"
+                                placeholder="••••••••"
+                                required
+                            />
+                        </div>
+
+                        <label
+                            class="checkbox-label"
+                            style="margin-bottom: 16px"
+                        >
+                            <input
+                                type="checkbox"
+                                name="agree_terms"
+                                required
+                            />
+                            <span
+                                >I agree to the
+                                <a href="#" class="link-text"
+                                    >Terms of Service</a
+                                ></span
+                            >
+                        </label>
+
+                        <button type="submit" class="auth-btn-primary">
+                            Create Account
+                        </button>
+
+                        <div class="auth-footer">
+                            Already have an account?
+                            <label for="tab-signin" class="link-text"
+                                >Sign in</label
+                            >
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Back to home link -->
+                <div class="auth-back">
+                    <a href="index.html" class="link-text">
+                        <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                        >
+                            <line x1="19" y1="12" x2="5" y2="12" />
+                            <polyline points="12 19 5 12 12 5" />
+                        </svg>
+                        Back to home
+                    </a>
+                </div>
+            </div>
+
+            <!-- RIGHT: Graphic Column -->
+            <div class="auth-right">
+                <!-- Background pattern -->
+                <div class="auth-bg-pattern"></div>
+
+                <!-- Floating card illustration -->
+                <div class="auth-graphic">
+                    <div class="auth-card">
+                        <div class="auth-card-header">
+                            <div class="auth-card-dots">
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                            </div>
+                        </div>
+                        <div class="auth-card-body">
+                            <div class="auth-icon-badge">
+                                <svg
+                                    width="32"
+                                    height="32"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="1.5"
+                                >
+                                    <path
+                                        d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M4 8h11a1 1 0 011 1v6a1 1 0 01-1 1H4a2 2 0 01-2-2v-4a2 2 0 012-2z"
+                                    />
+                                </svg>
+                            </div>
+                            <h2>Connect from anywhere</h2>
+                            <p>
+                                Secure, instant video meetings with no downloads
+                                required.
+                            </p>
+                            <div class="auth-features">
+                                <div class="auth-feature-item">
+                                    <svg
+                                        width="16"
+                                        height="16"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="2.5"
+                                    >
+                                        <polyline points="20 6 9 17 4 12" />
+                                    </svg>
+                                    HD Video & Audio
+                                </div>
+                                <div class="auth-feature-item">
+                                    <svg
+                                        width="16"
+                                        height="16"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="2.5"
+                                    >
+                                        <polyline points="20 6 9 17 4 12" />
+                                    </svg>
+                                    End-to-end Encryption
+                                </div>
+                                <div class="auth-feature-item">
+                                    <svg
+                                        width="16"
+                                        height="16"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="2.5"
+                                    >
+                                        <polyline points="20 6 9 17 4 12" />
+                                    </svg>
+                                    Screen Sharing
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Floating stats badges -->
+                    <div class="auth-stat auth-stat-1">
+                        <span class="stat-num">2M+</span>
+                        <span class="stat-lbl">Active Users</span>
+                    </div>
+                    <div class="auth-stat auth-stat-2">
+                        <span class="stat-num">99.9%</span>
+                        <span class="stat-lbl">Uptime</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+    <script>
+        $(function () {
+            const $signinBtn = $("#btn-signin");
+            const $signupBtn = $("#btn-signup");
+            const $signinForm = $("#signin-form");
+            const $signupForm = $("#signup-form");
+
+            function toggleAuth(mode) {
+                if (mode === "signup") {
+                    $signupBtn.addClass("active");
+                    $signinBtn.removeClass("active");
+                    $signupForm.addClass("active");
+                    $signinForm.removeClass("active");
+                } else {
+                    $signinBtn.addClass("active");
+                    $signupBtn.removeClass("active");
+                    $signinForm.addClass("active");
+                    $signupForm.removeClass("active");
+                }
+            }
+
+            $signinBtn.on("click", () => toggleAuth("signin"));
+            $signupBtn.on("click", () => toggleAuth("signup"));
+
+            // Handle the "Sign up" / "Sign in" footer links
+            $(document).on(
+                "click",
+                "label[for='tab-signup'], label[for='tab-signin']",
+                function () {
+                    const target =
+                        $(this).attr("for") === "tab-signup"
+                            ? "signup"
+                            : "signin";
+                    toggleAuth(target);
+                },
+            );
+        });
+    </script>
+</html>

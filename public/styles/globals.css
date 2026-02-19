@@ -98,6 +98,10 @@ button:hover {
     background: var(--danger-hover);
 }
 
+.nav-logo-img:hover {
+    cursor: pointer;
+}
+
 /* ── Control buttons (room page) ── */
 .ctrl-btn {
     display: flex;

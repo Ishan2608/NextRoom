@@ -25,7 +25,7 @@
                 <p>Next Room</p>
             </div>
             <div class="home-nav-right">
-                <button>Sign In</button>
+                <button id="sign-in-btn">Sign In</button>
                 <button class="join-meeting-button">Join Meeting</button>
             </div>
         </nav>
@@ -163,6 +163,9 @@
 
         <script>
             $(function () {
+                $("#sign-in-btn").click(function () {
+                    window.location.href = "auth.html";
+                });
                 $(document).on("click", ".join-meeting-button", function () {
                     $("#meet-code").focus();
                 });
