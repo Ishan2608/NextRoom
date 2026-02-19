@@ -1,3 +1,88 @@
+// MANAGE PEER-PEER TO CONNECTION
+var AppProcess = (function () {
+  var peers_conn_ids = [];
+  var peers_connections = [];
+  var remote_vid_stream = [];
+  var remote_aud_stream = [];
+  var serverProcess;
+  var iceConfig = {
+    iceServers: [
+      { urls: "stun:stun.l.google.com:19302" },
+      { urls: "stun:stun1.l.google.com:19302" },
+    ],
+  };
+
+  function _init(SDP_function, myconn_id) {
+    console.log("Initializing AppProcess...");
+    serverProcess = SDP_function;
+    my_connection_id = myconn_id;
+    // Initialize any necessary variables or resources here
+  }
+
+  function setConnection(conn_id) {
+    console.log("Setting Connection with Peer: " + conn_id);
+    var connection = new RTCPeerConnection(iceConfig);
+
+    connection.onnegotiationneeded = async (event) => {
+      await setOffer(conn_id);
+    };
+    connection.onicecandidate = function (event) {
+      if (event.candidate) {
+        serverProcess(
+          JSON.stringify({ icecandidate: event.candidate }),
+          conn_id,
+        );
+      }
+    };
+    connection.ontrack = function (event) {
+      console.log("Received track from peer");
+      if (!remote_vid_stream[conn_id]) {
+        remote_vid_stream[conn_id] = new MediaStream();
+      }
+      if (!remote_aud_stream[conn_id]) {
+        remote_aud_stream[conn_id] = new MediaStream();
+      }
+      if (event.track.kind == "video") {
+        remote_vid_stream[conn_id].getVideoTracks().forEach((t) => {
+          remote_vid_stream[conn_id].removeTrack(t);
+        });
+        remote_vid_stream[conn_id].addTrack(event.track);
+        var remoteVideoPlayer = document.getElementById("v_" + conn_id);
+        remoteVideoPlayer.srcObject = null;
+        remoteVideoPlayer.srcObject = remote_vid_stream[conn_id];
+        remoteVideoPlayer.load();
+      } else if (event.track.kind == "audio") {
+        remote_aud_stream[conn_id].getAudioTracks().forEach((t) => {
+          remote_aud_stream[conn_id].removeTrack(t);
+        });
+        remote_aud_stream[conn_id].addTrack(event.track);
+        var remoteAudioPlayer = document.getElementById("a_" + conn_id);
+        remoteAudioPlayer.srcObject = null;
+        remoteAudioPlayer.srcObject = remote_aud_stream[conn_id];
+      }
+    };
+    peers_conn_ids[conn_id] = conn_id;
+    peers_connections[conn_id] = connection;
+  }
+
+  async function setOffer(connId) {
+    var connection = peers_connections[connId];
+    var offer = await connection.createOffer();
+    await connection.setLocalDescription(offer);
+    serverProcess(JSON.stringify({ offer: offer }), connId);
+  }
+  return {
+    setNewConnection: async function (conn_id) {
+      await setConnection(conn_id);
+    },
+    // We get these params from MyApp, since it communcates with the Server.
+    init: async function (SDP_function, myconn_id) {
+      await _init(SDP_function, myconn_id);
+    },
+  };
+})();
+
+// TALK TO SERVER
 var MyApp = (function () {
   var socket;
   var userID;
@@ -21,7 +106,7 @@ var MyApp = (function () {
         alt: "",
       }),
       $("<h3>").text(other_user_id),
-      $("<video>", {
+      $("<video autoplay muted>", {
         id: "v_" + conn_id,
         autoplay: true,
         playsinline: true,
@@ -44,12 +129,20 @@ var MyApp = (function () {
 
     socket = io.connect();
 
+    var SDP_function = function (data, to_conn_id) {
+      socket.emit("SDP_Process", {
+        message: data,
+        to_connid: to_conn_id,
+      });
+    };
+
     socket.on("connect", function () {
       console.log("Socket Connected to Client-Side " + socket.id);
       console.log("socket.connected:", socket.connected);
       console.log("Checking userID and roomID:", userID, roomID);
 
       if (socket.connected) {
+        AppProcess.init(SDP_function, socket.id);
         if (userID !== "" && roomID !== "") {
           console.log("About to emit userconnect with:", {
             displayName: userID,
@@ -81,6 +174,8 @@ var MyApp = (function () {
     socket.on("newuser_joined", (data) => {
       console.log("newuser_joined event received:", data);
       addUser(data.other_user_id, data.conn_id);
+      // To establish connection between users without server
+      AppProcess.setNewConnection(data.conn_id);
     });
 
     socket.on("connect_error", (error) => {
