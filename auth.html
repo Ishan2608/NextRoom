@@ -6,19 +6,18 @@
         <title>Sign In | Next Room</title>
         <link rel="stylesheet" href="./public/styles/globals.css" />
         <link rel="stylesheet" href="./public/styles/index.css" />
+        <!-- jQuery was missing in the original — this is why tabs and forms didn't work -->
         <script
-            src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.8.1/socket.io.js"
-            integrity="sha512-8BHxHDLsOHx+flIrQ0DrZcea7MkHqRU5GbTHmbdzMRnAaoCIkZ97PqZcXJkKZckMMhqfoeaJE+DNUVuyoQsO3Q=="
+            src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"
+            integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g=="
             crossorigin="anonymous"
             referrerpolicy="no-referrer"
         ></script>
-        <script src="./public/js/app.js"></script>
     </head>
     <body class="auth-page">
         <div class="auth-container">
             <!-- LEFT: Form Column -->
             <div class="auth-left">
-                <!-- Logo top-left -->
                 <div class="auth-brand">
                     <img
                         class="nav-logo-img"
@@ -28,7 +27,6 @@
                     <span>Next Room</span>
                 </div>
 
-                <!-- Form content wrapper -->
                 <div class="auth-form-wrap">
                     <!-- Toggle tabs -->
                     <div class="auth-tabs">
@@ -44,8 +42,20 @@
                         </button>
                     </div>
 
+                    <!-- Message banner (errors / success) -->
+                    <div
+                        id="auth-message"
+                        style="
+                            display: none;
+                            padding: 10px 14px;
+                            border-radius: 8px;
+                            margin-bottom: 12px;
+                            font-size: 14px;
+                        "
+                    ></div>
+
                     <!-- Sign In Form -->
-                    <form class="auth-form signin-form" id="signin-form">
+                    <form class="auth-form signin-form active" id="signin-form">
                         <h1>Welcome back</h1>
                         <p class="auth-subtitle">
                             Enter your credentials to access your account
@@ -81,14 +91,20 @@
                             <a href="#" class="link-text">Forgot password?</a>
                         </div>
 
-                        <button type="submit" class="auth-btn-primary">
+                        <button
+                            type="submit"
+                            class="auth-btn-primary"
+                            id="signin-submit-btn"
+                        >
                             Sign In
                         </button>
 
                         <div class="auth-footer">
                             Don't have an account?
-                            <label for="tab-signup" class="link-text"
-                                >Sign up</label
+                            <span
+                                class="link-text switch-tab"
+                                data-target="signup"
+                                >Sign up</span
                             >
                         </div>
                     </form>
@@ -163,20 +179,25 @@
                             >
                         </label>
 
-                        <button type="submit" class="auth-btn-primary">
+                        <button
+                            type="submit"
+                            class="auth-btn-primary"
+                            id="signup-submit-btn"
+                        >
                             Create Account
                         </button>
 
                         <div class="auth-footer">
                             Already have an account?
-                            <label for="tab-signin" class="link-text"
-                                >Sign in</label
+                            <span
+                                class="link-text switch-tab"
+                                data-target="signin"
+                                >Sign in</span
                             >
                         </div>
                     </form>
                 </div>
 
-                <!-- Back to home link -->
                 <div class="auth-back">
                     <a href="index.html" class="link-text">
                         <svg
@@ -197,17 +218,12 @@
 
             <!-- RIGHT: Graphic Column -->
             <div class="auth-right">
-                <!-- Background pattern -->
                 <div class="auth-bg-pattern"></div>
-
-                <!-- Floating card illustration -->
                 <div class="auth-graphic">
                     <div class="auth-card">
                         <div class="auth-card-header">
                             <div class="auth-card-dots">
-                                <span></span>
-                                <span></span>
-                                <span></span>
+                                <span></span><span></span><span></span>
                             </div>
                         </div>
                         <div class="auth-card-body">
@@ -242,7 +258,7 @@
                                     >
                                         <polyline points="20 6 9 17 4 12" />
                                     </svg>
-                                    HD Video & Audio
+                                    HD Video &amp; Audio
                                 </div>
                                 <div class="auth-feature-item">
                                     <svg
@@ -273,8 +289,6 @@
                             </div>
                         </div>
                     </div>
-
-                    <!-- Floating stats badges -->
                     <div class="auth-stat auth-stat-1">
                         <span class="stat-num">2M+</span>
                         <span class="stat-lbl">Active Users</span>
@@ -286,43 +300,169 @@
                 </div>
             </div>
         </div>
-    </body>
-    <script>
-        $(function () {
-            const $signinBtn = $("#btn-signin");
-            const $signupBtn = $("#btn-signup");
-            const $signinForm = $("#signin-form");
-            const $signupForm = $("#signup-form");
 
-            function toggleAuth(mode) {
-                if (mode === "signup") {
-                    $signupBtn.addClass("active");
-                    $signinBtn.removeClass("active");
-                    $signupForm.addClass("active");
-                    $signinForm.removeClass("active");
-                } else {
-                    $signinBtn.addClass("active");
-                    $signupBtn.removeClass("active");
-                    $signinForm.addClass("active");
-                    $signupForm.removeClass("active");
+        <script>
+            $(function () {
+                // ── TAB TOGGLE ──────────────────────────────────────
+                function toggleAuth(mode) {
+                    if (mode === "signup") {
+                        $("#btn-signup").addClass("active");
+                        $("#btn-signin").removeClass("active");
+                        $("#signup-form").addClass("active");
+                        $("#signin-form").removeClass("active");
+                    } else {
+                        $("#btn-signin").addClass("active");
+                        $("#btn-signup").removeClass("active");
+                        $("#signin-form").addClass("active");
+                        $("#signup-form").removeClass("active");
+                    }
+                    showMessage("", "");
                 }
-            }
 
-            $signinBtn.on("click", () => toggleAuth("signin"));
-            $signupBtn.on("click", () => toggleAuth("signup"));
+                $("#btn-signin").on("click", () => toggleAuth("signin"));
+                $("#btn-signup").on("click", () => toggleAuth("signup"));
 
-            // Handle the "Sign up" / "Sign in" footer links
-            $(document).on(
-                "click",
-                "label[for='tab-signup'], label[for='tab-signin']",
-                function () {
-                    const target =
-                        $(this).attr("for") === "tab-signup"
-                            ? "signup"
-                            : "signin";
-                    toggleAuth(target);
-                },
-            );
-        });
-    </script>
+                // Footer "Sign up / Sign in" text links
+                // Using data-target instead of <label for="..."> which was the original bug
+                $(document).on("click", ".switch-tab", function () {
+                    toggleAuth($(this).data("target"));
+                });
+
+                // ── MESSAGE BANNER ───────────────────────────────────
+                function showMessage(text, type) {
+                    const $msg = $("#auth-message");
+                    if (!text) {
+                        $msg.hide();
+                        return;
+                    }
+                    $msg.text(text).css({
+                        display: "block",
+                        background: type === "success" ? "#d1fae5" : "#fee2e2",
+                        color: type === "success" ? "#065f46" : "#991b1b",
+                        border:
+                            type === "success"
+                                ? "1px solid #6ee7b7"
+                                : "1px solid #fca5a5",
+                    });
+                }
+
+                function setLoading(btnId, loading) {
+                    const $btn = $("#" + btnId);
+                    $btn.prop("disabled", loading).text(
+                        loading ? "Please wait..." : $btn.data("label"),
+                    );
+                }
+
+                $("#signin-submit-btn").data("label", "Sign In");
+                $("#signup-submit-btn").data("label", "Create Account");
+
+                // ── SIGN IN ──────────────────────────────────────────
+                $("#signin-form").on("submit", async function (e) {
+                    e.preventDefault();
+                    showMessage("", "");
+                    setLoading("signin-submit-btn", true);
+
+                    const email = $("#signin-email").val().trim();
+                    const password = $("#signin-password").val();
+
+                    try {
+                        const res = await fetch("/api/signin", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ email, password }),
+                        });
+                        const data = await res.json();
+
+                        if (res.ok) {
+                            sessionStorage.setItem(
+                                "displayName",
+                                data.displayName,
+                            );
+                            showMessage("Signed in! Redirecting...", "success");
+
+                            // Go back to where the user was trying to go, or home
+                            const redirect = "index.html";
+                            setTimeout(() => {
+                                window.location.href = redirect;
+                            }, 800);
+                        } else {
+                            showMessage(
+                                data.error || "Sign in failed.",
+                                "error",
+                            );
+                            setLoading("signin-submit-btn", false);
+                        }
+                    } catch (err) {
+                        showMessage(
+                            "Network error. Is the server running?",
+                            "error",
+                        );
+                        setLoading("signin-submit-btn", false);
+                    }
+                });
+
+                // ── SIGN UP ──────────────────────────────────────────
+                $("#signup-form").on("submit", async function (e) {
+                    e.preventDefault();
+                    showMessage("", "");
+
+                    const fullname = $("#signup-name").val().trim();
+                    const email = $("#signup-email").val().trim();
+                    const password = $("#signup-password").val();
+                    const passwordConfirm = $("#signup-password-confirm").val();
+
+                    if (password !== passwordConfirm) {
+                        showMessage("Passwords do not match.", "error");
+                        return;
+                    }
+                    if (password.length < 6) {
+                        showMessage(
+                            "Password must be at least 6 characters.",
+                            "error",
+                        );
+                        return;
+                    }
+
+                    setLoading("signup-submit-btn", true);
+
+                    try {
+                        const res = await fetch("/api/signup", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ fullname, email, password }),
+                        });
+                        const data = await res.json();
+
+                        if (res.ok) {
+                            sessionStorage.setItem(
+                                "displayName",
+                                data.displayName,
+                            );
+                            showMessage(
+                                "Account created! Redirecting...",
+                                "success",
+                            );
+
+                            const redirect = "index.html";
+                            setTimeout(() => {
+                                window.location.href = redirect;
+                            }, 800);
+                        } else {
+                            showMessage(
+                                data.error || "Sign up failed.",
+                                "error",
+                            );
+                            setLoading("signup-submit-btn", false);
+                        }
+                    } catch (err) {
+                        showMessage(
+                            "Network error. Is the server running?",
+                            "error",
+                        );
+                        setLoading("signup-submit-btn", false);
+                    }
+                });
+            });
+        </script>
+    </body>
 </html>
