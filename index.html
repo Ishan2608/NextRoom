@@ -25,7 +25,8 @@
                 <p>Next Room</p>
             </div>
             <div class="home-nav-right">
-                <button id="sign-in-btn">Sign In</button>
+                <!-- Shown as "Sign In" when logged out, "Sign Out" when logged in -->
+                <button id="auth-nav-btn">Sign In</button>
                 <button class="join-meeting-button">Join Meeting</button>
             </div>
         </nav>
@@ -163,34 +164,64 @@
 
         <script>
             $(function () {
-                $("#sign-in-btn").click(function () {
-                    window.location.href = "auth.html";
+                // ─────────────────────────────────────────────
+                // AUTH STATE
+                // Simple explanation: sessionStorage is like a temporary notepad
+                //   the browser keeps for this tab. We check if a displayName was
+                //   saved there after login. If yes → user is signed in.
+                // ─────────────────────────────────────────────
+                const isLoggedIn = !!sessionStorage.getItem("displayName");
+
+                // Update the nav button to reflect auth state
+                if (isLoggedIn) {
+                    $("#auth-nav-btn").text(
+                        `Sign Out ${sessionStorage.getItem("displayName")}`,
+                    );
+                } else {
+                    $("#auth-nav-btn").text("Sign In");
+                }
+
+                $("#auth-nav-btn").click(function () {
+                    if (isLoggedIn) {
+                        // Sign out: clear session and refresh so the page reflects the change
+                        sessionStorage.removeItem("displayName");
+                        window.location.reload();
+                    } else {
+                        window.location.href = "auth.html";
+                    }
                 });
+
+                // ─────────────────────────────────────────────
+                // AUTH GUARD HELPER
+                // If user is not signed in, save the target URL they wanted
+                // and redirect them to auth first. After login they'll
+                // automatically land on the target URL.
+                // ─────────────────────────────────────────────
+                function goToRoom(targetURL) {
+                    if (!isLoggedIn) {
+                        sessionStorage.setItem("redirectAfterAuth", targetURL);
+                        window.location.href = "auth.html";
+                        return;
+                    }
+                    window.location.href = targetURL;
+                }
+
                 $(document).on("click", ".join-meeting-button", function () {
                     $("#meet-code").focus();
                 });
+
                 $(document).on("click", "#join-action-button", function () {
-                    const code = $("#meet-code").val();
-                    if (code) {
-                        const param = `?roomID=${code}`;
-                        // Construct the relative path to room.html
-                        const targetURL = `room.html${param}`;
-                        // Optional: Log to verify the path before redirecting
-                        console.log("Redirecting to:", targetURL);
-                        window.location.href = targetURL;
-                    } else {
+                    const code = $("#meet-code").val().trim();
+                    if (!code) {
                         alert("Please enter a valid meeting code.");
                         return;
                     }
+                    goToRoom(`room.html?roomID=${code}`);
                 });
+
                 $(document).on("click", "#new-meeting-btn", function () {
                     const code = Math.floor(Math.random() * 1000000);
-                    const param = `?roomID=${code}`;
-                    // Construct the relative path to room.html
-                    const targetURL = `room.html${param}`;
-                    // Optional: Log to verify the path before redirecting
-                    console.log("Redirecting to:", targetURL);
-                    window.location.href = targetURL;
+                    goToRoom(`room.html?roomID=${code}`);
                 });
             });
         </script>

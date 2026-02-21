@@ -20,22 +20,19 @@
         ></script>
         <script src="./public/js/app.js"></script>
         <script>
-            var roomID, userID, userName; // Declare in global scope
-        </script>
-        <script>
-            $(function () {
-                $(".room-page").hide();
-                const urlParams = new URLSearchParams(window.location.search);
-                roomID = urlParams.get("roomID");
-                userName = window.prompt("Enter Your Name");
-                if (!userName || !roomID) {
-                    alert("User ID or Room ID missing");
-                    window.location.href = "index.html";
-                    return;
-                }
-                $(".room-page").show();
-                MyApp._init(userName, roomID); // Move init call inside the ready block
-            });
+            // $(function () {
+            //     $(".room-page").hide();
+            //     const urlParams = new URLSearchParams(window.location.search);
+            //     roomID = urlParams.get("roomID");
+            //     userName = window.prompt("Enter Your Name");
+            //     if (!userName || !roomID) {
+            //         alert("User ID or Room ID missing");
+            //         window.location.href = "index.html";
+            //         return;
+            //     }
+            //     $(".room-page").show();
+            //     MyApp._init(userName, roomID); // Move init call inside the ready block
+            // });
         </script>
     </head>
     <body class="room-page">

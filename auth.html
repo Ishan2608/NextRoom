@@ -381,7 +381,10 @@
                             showMessage("Signed in! Redirecting...", "success");
 
                             // Go back to where the user was trying to go, or home
-                            const redirect = "index.html";
+                            const redirect =
+                                sessionStorage.getItem("redirectAfterAuth") ||
+                                "index.html";
+                            sessionStorage.removeItem("redirectAfterAuth");
                             setTimeout(() => {
                                 window.location.href = redirect;
                             }, 800);
@@ -443,7 +446,10 @@
                                 "success",
                             );
 
-                            const redirect = "index.html";
+                            const redirect =
+                                sessionStorage.getItem("redirectAfterAuth") ||
+                                "index.html";
+                            sessionStorage.removeItem("redirectAfterAuth");
                             setTimeout(() => {
                                 window.location.href = redirect;
                             }, 800);

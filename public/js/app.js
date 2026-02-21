@@ -233,3 +233,28 @@ var MyApp = (function () {
     },
   };
 })();
+
+(function () {
+  const params = new URLSearchParams(window.location.search);
+  const roomID = params.get("roomID");
+  const userID = sessionStorage.getItem("displayName");
+
+  // Not signed in → save target URL → redirect to auth
+  if (!userID) {
+    sessionStorage.setItem("redirectAfterAuth", window.location.href);
+    window.location.href = "auth.html";
+    return;
+  }
+
+  // No room in URL → back to home
+  if (!roomID) {
+    window.location.href = "index.html";
+    return;
+  }
+
+  // Start camera/mic first, THEN join the room.
+  // This ensures local tracks exist before any RTCPeerConnection is created,
+  // so addTrack() works correctly when peers connect.
+
+  MyApp._init(userID, roomID);
+})();
