@@ -3,472 +3,52 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Sign In | Next Room</title>
+        <title>Next Room</title>
         <link rel="stylesheet" href="./public/styles/globals.css" />
         <link rel="stylesheet" href="./public/styles/index.css" />
-        <!-- jQuery was missing in the original — this is why tabs and forms didn't work -->
         <script
             src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"
             integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g=="
             crossorigin="anonymous"
             referrerpolicy="no-referrer"
         ></script>
+        <script src="./public/js/app.js"></script>
     </head>
-    <body class="auth-page">
-        <div class="auth-container">
-            <!-- LEFT: Form Column -->
-            <div class="auth-left">
-                <div class="auth-brand">
-                    <img
-                        class="nav-logo-img"
-                        src="./public/assets/logo.png"
-                        alt="Logo of Next Room"
-                    />
-                    <span>Next Room</span>
-                </div>
-
-                <div class="auth-form-wrap">
-                    <!-- Toggle tabs -->
-                    <div class="auth-tabs">
-                        <button
-                            type="button"
-                            class="auth-tab active"
-                            id="btn-signin"
-                        >
-                            Sign In
-                        </button>
-                        <button type="button" class="auth-tab" id="btn-signup">
-                            Sign Up
-                        </button>
-                    </div>
-
-                    <!-- Message banner (errors / success) -->
-                    <div
-                        id="auth-message"
-                        style="
-                            display: none;
-                            padding: 10px 14px;
-                            border-radius: 8px;
-                            margin-bottom: 12px;
-                            font-size: 14px;
-                        "
-                    ></div>
-
-                    <!-- Sign In Form -->
-                    <form class="auth-form signin-form active" id="signin-form">
-                        <h1>Welcome back</h1>
-                        <p class="auth-subtitle">
-                            Enter your credentials to access your account
-                        </p>
-
-                        <div class="form-group">
-                            <label for="signin-email">Email</label>
-                            <input
-                                type="email"
-                                id="signin-email"
-                                name="email"
-                                placeholder="you@example.com"
-                                required
-                            />
-                        </div>
-
-                        <div class="form-group">
-                            <label for="signin-password">Password</label>
-                            <input
-                                type="password"
-                                id="signin-password"
-                                name="password"
-                                placeholder="••••••••"
-                                required
-                            />
-                        </div>
-
-                        <div class="form-row">
-                            <label class="checkbox-label">
-                                <input type="checkbox" name="remember" />
-                                <span>Remember me</span>
-                            </label>
-                            <a href="#" class="link-text">Forgot password?</a>
-                        </div>
-
-                        <button
-                            type="submit"
-                            class="auth-btn-primary"
-                            id="signin-submit-btn"
-                        >
-                            Sign In
-                        </button>
-
-                        <div class="auth-footer">
-                            Don't have an account?
-                            <span
-                                class="link-text switch-tab"
-                                data-target="signup"
-                                >Sign up</span
-                            >
-                        </div>
-                    </form>
-
-                    <!-- Sign Up Form -->
-                    <form class="auth-form signup-form" id="signup-form">
-                        <h1>Create account</h1>
-                        <p class="auth-subtitle">
-                            Get started with Next Room in seconds
-                        </p>
-
-                        <div class="form-group">
-                            <label for="signup-name">Full Name</label>
-                            <input
-                                type="text"
-                                id="signup-name"
-                                name="fullname"
-                                placeholder="John Doe"
-                                required
-                            />
-                        </div>
-
-                        <div class="form-group">
-                            <label for="signup-email">Email</label>
-                            <input
-                                type="email"
-                                id="signup-email"
-                                name="email"
-                                placeholder="you@example.com"
-                                required
-                            />
-                        </div>
-
-                        <div class="form-group">
-                            <label for="signup-password">Password</label>
-                            <input
-                                type="password"
-                                id="signup-password"
-                                name="password"
-                                placeholder="••••••••"
-                                required
-                            />
-                        </div>
-
-                        <div class="form-group">
-                            <label for="signup-password-confirm"
-                                >Confirm Password</label
-                            >
-                            <input
-                                type="password"
-                                id="signup-password-confirm"
-                                name="password_confirm"
-                                placeholder="••••••••"
-                                required
-                            />
-                        </div>
-
-                        <label
-                            class="checkbox-label"
-                            style="margin-bottom: 16px"
-                        >
-                            <input
-                                type="checkbox"
-                                name="agree_terms"
-                                required
-                            />
-                            <span
-                                >I agree to the
-                                <a href="#" class="link-text"
-                                    >Terms of Service</a
-                                ></span
-                            >
-                        </label>
-
-                        <button
-                            type="submit"
-                            class="auth-btn-primary"
-                            id="signup-submit-btn"
-                        >
-                            Create Account
-                        </button>
-
-                        <div class="auth-footer">
-                            Already have an account?
-                            <span
-                                class="link-text switch-tab"
-                                data-target="signin"
-                                >Sign in</span
-                            >
-                        </div>
-                    </form>
-                </div>
-
-                <div class="auth-back">
-                    <a href="index.html" class="link-text">
-                        <svg
-                            width="14"
-                            height="14"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                        >
-                            <line x1="19" y1="12" x2="5" y2="12" />
-                            <polyline points="12 19 5 12 12 5" />
-                        </svg>
-                        Back to home
-                    </a>
+    <body>
+        <nav class="flex-center">
+            <div class="nav-left">
+                <a href="/" class="row-center">
+                    <img id="nav-logo" src="./public/assets/logo.png" />
+                    <p>Next Room</p>
+                </a>
+            </div>
+            <div class="nav-right flex-row">
+                <button>New Meeting</button>
+                <button>Sign In</button>
+                <div class="mid-center user-initials">
+                    <p>IR</p>
                 </div>
             </div>
+        </nav>
+        <main class="flex-row two-cols">
+            <div class="left-col flex-col">
+                <h2>Welcome to Auth</h2>
 
-            <!-- RIGHT: Graphic Column -->
-            <div class="auth-right">
-                <div class="auth-bg-pattern"></div>
-                <div class="auth-graphic">
-                    <div class="auth-card">
-                        <div class="auth-card-header">
-                            <div class="auth-card-dots">
-                                <span></span><span></span><span></span>
-                            </div>
-                        </div>
-                        <div class="auth-card-body">
-                            <div class="auth-icon-badge">
-                                <svg
-                                    width="32"
-                                    height="32"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    stroke-width="1.5"
-                                >
-                                    <path
-                                        d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M4 8h11a1 1 0 011 1v6a1 1 0 01-1 1H4a2 2 0 01-2-2v-4a2 2 0 012-2z"
-                                    />
-                                </svg>
-                            </div>
-                            <h2>Connect from anywhere</h2>
-                            <p>
-                                Secure, instant video meetings with no downloads
-                                required.
-                            </p>
-                            <div class="auth-features">
-                                <div class="auth-feature-item">
-                                    <svg
-                                        width="16"
-                                        height="16"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        stroke-width="2.5"
-                                    >
-                                        <polyline points="20 6 9 17 4 12" />
-                                    </svg>
-                                    HD Video &amp; Audio
-                                </div>
-                                <div class="auth-feature-item">
-                                    <svg
-                                        width="16"
-                                        height="16"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        stroke-width="2.5"
-                                    >
-                                        <polyline points="20 6 9 17 4 12" />
-                                    </svg>
-                                    End-to-end Encryption
-                                </div>
-                                <div class="auth-feature-item">
-                                    <svg
-                                        width="16"
-                                        height="16"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        stroke-width="2.5"
-                                    >
-                                        <polyline points="20 6 9 17 4 12" />
-                                    </svg>
-                                    Screen Sharing
-                                </div>
-                            </div>
-                        </div>
+                <div class="tabs">
+                    <button id="signin-tab">Sign In</button>
+                    <button id="signup-tab">Sign Up</button>
+                </div>
+
+                <div class="tab-content">
+                    <div id="signin-tab-content">
+                        <h2>Sign In</h2>
                     </div>
-                    <div class="auth-stat auth-stat-1">
-                        <span class="stat-num">2M+</span>
-                        <span class="stat-lbl">Active Users</span>
-                    </div>
-                    <div class="auth-stat auth-stat-2">
-                        <span class="stat-num">99.9%</span>
-                        <span class="stat-lbl">Uptime</span>
+                    <div id="signup-tab-content">
+                        <h2>Sign Up</h2>
                     </div>
                 </div>
             </div>
-        </div>
-
-        <script>
-            $(function () {
-                // ── TAB TOGGLE ──────────────────────────────────────
-                function toggleAuth(mode) {
-                    if (mode === "signup") {
-                        $("#btn-signup").addClass("active");
-                        $("#btn-signin").removeClass("active");
-                        $("#signup-form").addClass("active");
-                        $("#signin-form").removeClass("active");
-                    } else {
-                        $("#btn-signin").addClass("active");
-                        $("#btn-signup").removeClass("active");
-                        $("#signin-form").addClass("active");
-                        $("#signup-form").removeClass("active");
-                    }
-                    showMessage("", "");
-                }
-
-                $("#btn-signin").on("click", () => toggleAuth("signin"));
-                $("#btn-signup").on("click", () => toggleAuth("signup"));
-
-                // Footer "Sign up / Sign in" text links
-                // Using data-target instead of <label for="..."> which was the original bug
-                $(document).on("click", ".switch-tab", function () {
-                    toggleAuth($(this).data("target"));
-                });
-
-                // ── MESSAGE BANNER ───────────────────────────────────
-                function showMessage(text, type) {
-                    const $msg = $("#auth-message");
-                    if (!text) {
-                        $msg.hide();
-                        return;
-                    }
-                    $msg.text(text).css({
-                        display: "block",
-                        background: type === "success" ? "#d1fae5" : "#fee2e2",
-                        color: type === "success" ? "#065f46" : "#991b1b",
-                        border:
-                            type === "success"
-                                ? "1px solid #6ee7b7"
-                                : "1px solid #fca5a5",
-                    });
-                }
-
-                function setLoading(btnId, loading) {
-                    const $btn = $("#" + btnId);
-                    $btn.prop("disabled", loading).text(
-                        loading ? "Please wait..." : $btn.data("label"),
-                    );
-                }
-
-                $("#signin-submit-btn").data("label", "Sign In");
-                $("#signup-submit-btn").data("label", "Create Account");
-
-                // ── SIGN IN ──────────────────────────────────────────
-                $("#signin-form").on("submit", async function (e) {
-                    e.preventDefault();
-                    showMessage("", "");
-                    setLoading("signin-submit-btn", true);
-
-                    const email = $("#signin-email").val().trim();
-                    const password = $("#signin-password").val();
-
-                    try {
-                        const res = await fetch("/api/signin", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ email, password }),
-                        });
-                        const data = await res.json();
-
-                        if (res.ok) {
-                            sessionStorage.setItem(
-                                "displayName",
-                                data.displayName,
-                            );
-                            showMessage("Signed in! Redirecting...", "success");
-
-                            // Go back to where the user was trying to go, or home
-                            const redirect =
-                                sessionStorage.getItem("redirectAfterAuth") ||
-                                "index.html";
-                            sessionStorage.removeItem("redirectAfterAuth");
-                            setTimeout(() => {
-                                window.location.href = redirect;
-                            }, 800);
-                        } else {
-                            showMessage(
-                                data.error || "Sign in failed.",
-                                "error",
-                            );
-                            setLoading("signin-submit-btn", false);
-                        }
-                    } catch (err) {
-                        showMessage(
-                            "Network error. Is the server running?",
-                            "error",
-                        );
-                        setLoading("signin-submit-btn", false);
-                    }
-                });
-
-                // ── SIGN UP ──────────────────────────────────────────
-                $("#signup-form").on("submit", async function (e) {
-                    e.preventDefault();
-                    showMessage("", "");
-
-                    const fullname = $("#signup-name").val().trim();
-                    const email = $("#signup-email").val().trim();
-                    const password = $("#signup-password").val();
-                    const passwordConfirm = $("#signup-password-confirm").val();
-
-                    if (password !== passwordConfirm) {
-                        showMessage("Passwords do not match.", "error");
-                        return;
-                    }
-                    if (password.length < 6) {
-                        showMessage(
-                            "Password must be at least 6 characters.",
-                            "error",
-                        );
-                        return;
-                    }
-
-                    setLoading("signup-submit-btn", true);
-
-                    try {
-                        const res = await fetch("/api/signup", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ fullname, email, password }),
-                        });
-                        const data = await res.json();
-
-                        if (res.ok) {
-                            sessionStorage.setItem(
-                                "displayName",
-                                data.displayName,
-                            );
-                            showMessage(
-                                "Account created! Redirecting...",
-                                "success",
-                            );
-
-                            const redirect =
-                                sessionStorage.getItem("redirectAfterAuth") ||
-                                "index.html";
-                            sessionStorage.removeItem("redirectAfterAuth");
-                            setTimeout(() => {
-                                window.location.href = redirect;
-                            }, 800);
-                        } else {
-                            showMessage(
-                                data.error || "Sign up failed.",
-                                "error",
-                            );
-                            setLoading("signup-submit-btn", false);
-                        }
-                    } catch (err) {
-                        showMessage(
-                            "Network error. Is the server running?",
-                            "error",
-                        );
-                        setLoading("signup-submit-btn", false);
-                    }
-                });
-            });
-        </script>
+            <div class="right-col"></div>
+        </main>
     </body>
 </html>

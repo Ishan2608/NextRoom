@@ -1,147 +1,167 @@
+:root {
+    --primary-bg: #121212;
+    --secondary-bg: #242323;
+    --primary-color: #8715d4;
+    --secondary-color: #8349e6;
+    --txt-color: #f0f0f0;
+    --danger: #e32817;
+    --txt-lg: 36px;
+    --txt-md: 20px;
+    --txt-nm: 16px;
+    --txt-p: 14px;
+}
+
 * {
     padding: 0;
     margin: 0;
     box-sizing: border-box;
     font-family: Geneva, "Lucida Grande", Tahoma, sans-serif;
+    color: var(--txt-color);
+    /*border: 1px solid white;*/
 }
 
-:root {
-    /* Brand */
-    --accent: #4361ee;
-    --accent-hover: #3451d1;
-    --danger: #ef4444;
-    --danger-hover: #dc2626;
-
-    /* Neutrals - Home (light) */
-    --btn-primary: slateblue;
-    --btn-primary-hover: darkslateblue;
-
-    /* Neutrals - Room (dark) */
-    --bg-base: #0b0c10;
-    --bg-surface: #13141a;
-    --bg-card: #1a1b24;
-    --bg-raised: #22232e;
-    --bg-hover: #2a2b3a;
-    --text-1: #f0f0f4;
-    --text-2: #9ca3af;
-    --text-3: #5c6370;
-    --border: rgba(255, 255, 255, 0.07);
-    --border-2: rgba(255, 255, 255, 0.12);
-
-    /* Radii */
-    --radius-sm: 8px;
-    --radius-md: 12px;
-    --radius-lg: 18px;
-    --radius-pill: 9999px;
+body {
+    height: 100%;
+    max-width: 1440px;
+    margin: auto;
+    background-color: var(--primary-bg);
+    font-size: var(--txt-p);
 }
 
-/* ── Utility ── */
-.center {
+p {
+    font-size: var(---txt-p);
+}
+
+main,
+nav,
+footer {
+    padding: 20px 20px;
+}
+
+main {
+    height: 100%;
+}
+
+nav * {
+    font-size: var(--txt-nm);
+}
+
+button {
+    padding: 8px 10px;
+    border-radius: 4px;
+    border: 1px solid var(--primary-color);
+    background-color: var(--primary-color);
+}
+
+button:hover {
+    cursor: pointer;
+    background-color: var(--secondary-bg);
+}
+
+input {
+    outline: none;
+    border: none;
+    padding: 8px 10px;
+    border: 2px solid var(---primary-color);
+    border-radius: 4px;
+    background-color: var(--secondary-bg-bg);
+}
+
+input:focus {
+    border: 2px solid var(--secondary-bg);
+}
+
+.txt-lg {
+    font-size: var(--txt-lg);
+}
+.txt-md {
+    font-size: var(--txt-md);
+}
+.txt-nm {
+    font-size: var(--txt-nm);
+}
+.txt-p {
+    font-size: var(--txt-p);
+}
+
+.flex-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+}
+
+.flex-col {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+    align-items: center;
+    gap: 20px;
+}
+
+.user-initials {
+    background-color: var(--primary-color);
+    font-weight: bolder;
+    text-transform: uppercase;
+    min-width: 30px;
+    padding: 8px;
+    aspect-ratio: 1/1;
+    border-radius: 50px;
+}
+
+.mid-center {
     display: flex;
     justify-content: center;
     align-items: center;
 }
 
-/* ── Base button (home page) ── */
-button {
-    border: none;
-    background-color: var(--btn-primary);
-    color: white;
-    padding: 10px 15px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-    font-family: Geneva, "Lucida Grande", Tahoma, sans-serif;
+.row-center {
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+    gap: 10px;
 }
 
-button:hover {
-    background-color: var(--btn-primary-hover);
+.flex-center {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
-/* ── Shared nav logo ── */
-.nav-logo-img {
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: none;
+    z-index: 99;
+}
+
+.modal {
+    min-width: 300px;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: var(--primary-bg);
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+    display: none;
+    z-index: 100;
+}
+
+.modalWrapper {
+    padding: 30px 30px;
+}
+
+.nav-left a {
+    text-decoration: none;
+    color: var(--txt-color);
+}
+
+#nav-logo {
     width: 30px;
     height: 30px;
-}
-
-/* ── Top-bar buttons (room page) ── */
-.tb-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 6px 14px;
-    border-radius: var(--radius-pill);
-    font-size: 0.78rem;
-    font-weight: 500;
-    cursor: pointer;
-    border: none;
-    transition:
-        background 0.16s,
-        color 0.16s;
-}
-
-.tb-btn-ghost {
-    background: var(--bg-card);
-    color: var(--text-2);
-    border: 1px solid var(--border-2);
-}
-.tb-btn-ghost:hover {
-    background: var(--bg-hover);
-    color: var(--text-1);
-}
-
-.tb-btn-danger {
-    background: var(--danger);
-    color: white;
-}
-.tb-btn-danger:hover {
-    background: var(--danger-hover);
-}
-
-.nav-logo-img:hover {
-    cursor: pointer;
-}
-
-/* ── Control buttons (room page) ── */
-.ctrl-btn {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 3px;
-    background: var(--bg-card);
-    border: 1px solid var(--border-2);
-    border-radius: var(--radius-md);
-    padding: 9px 14px;
-    cursor: pointer;
-    min-width: 58px;
-    font-size: 0.6rem;
-    color: var(--text-2);
-    font-weight: 500;
-    transition: all 0.16s;
-}
-.ctrl-btn:hover {
-    background: var(--bg-hover);
-    color: var(--text-1);
-    transform: translateY(-1px);
-}
-.ctrl-btn.active {
-    background: rgba(67, 97, 238, 0.15);
-    border-color: rgba(67, 97, 238, 0.35);
-    color: var(--accent);
-}
-.ctrl-btn.off {
-    background: rgba(239, 68, 68, 0.1);
-    border-color: rgba(239, 68, 68, 0.3);
-    color: var(--danger);
-}
-.ctrl-btn.end {
-    background: var(--danger);
-    border-color: transparent;
-    color: white;
-    padding: 9px 20px;
-    box-shadow: 0 3px 12px rgba(239, 68, 68, 0.3);
-}
-.ctrl-btn.end:hover {
-    background: var(--danger-hover);
-    box-shadow: 0 5px 18px rgba(239, 68, 68, 0.4);
 }

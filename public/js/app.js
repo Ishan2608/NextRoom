@@ -1,260 +1,79 @@
-// MANAGE PEER-PEER TO CONNECTION
-var AppProcess = (function () {
-  var peers_conn_ids = [];
-  var peers_connections = [];
-  var remote_vid_stream = [];
-  var remote_aud_stream = [];
-  var serverProcess;
-  var iceConfig = {
-    iceServers: [
-      { urls: "stun:stun.l.google.com:19302" },
-      { urls: "stun:stun1.l.google.com:19302" },
-    ],
-  };
+$(document).ready(function () {
+  // GLOBAL VARIABLES
+  let MEETCODE = 0;
 
-  async function _init(SDP_function, myconn_id) {
-    console.log("Initializing AppProcess...");
-    serverProcess = SDP_function;
-    my_connection_id = myconn_id;
-    // Initialize any necessary variables or resources here
+  // HOME PAGE ELEMENTS
+  const signinBtn = $("#signin-btn");
+
+  // Get GLOBAL ELEMENTS - MODAL and MODAL OVERLAY
+  const modalOverlay = $(".modal-overlay");
+  const modal = $(".modal");
+  const modalTitle = $(".modal-title");
+  const modalContent = $(".modal-content");
+
+  modalOverlay.click(function () {
+    modalOverlay.hide();
+    modal.hide();
+  });
+
+  // ROOM PAGE ELEMENTS
+  const navMeetCode = $("#nav-meet-code");
+  if (window.location.href.includes("meetID")) {
+    navMeetCode.text(MEETCODE);
   }
 
-  async function setConnection(conn_id) {
-    console.log("Setting Connection with Peer: " + conn_id);
-    var connection = new RTCPeerConnection(iceConfig);
+  // AUTH PAGE ELEMENTS
+  const signinTab = $("#signin-tab");
+  const signupTab = $("#signup-tab");
+  const signInContent = $("#signin-tab-content");
+  const signUpContent = $("#signup-tab-content");
 
-    connection.onnegotiationneeded = async (event) => {
-      await setOffer(conn_id);
-    };
-    connection.onicecandidate = function (event) {
-      if (event.candidate) {
-        serverProcess(
-          JSON.stringify({ icecandidate: event.candidate }),
-          conn_id,
-        );
-      }
-    };
-    connection.ontrack = function (event) {
-      console.log("Received track from peer");
-      if (!remote_vid_stream[conn_id]) {
-        remote_vid_stream[conn_id] = new MediaStream();
-      }
-      if (!remote_aud_stream[conn_id]) {
-        remote_aud_stream[conn_id] = new MediaStream();
-      }
-      if (event.track.kind == "video") {
-        remote_vid_stream[conn_id].getVideoTracks().forEach((t) => {
-          remote_vid_stream[conn_id].removeTrack(t);
-        });
-        remote_vid_stream[conn_id].addTrack(event.track);
-        var remoteVideoPlayer = document.getElementById("v_" + conn_id);
-        remoteVideoPlayer.srcObject = null;
-        remoteVideoPlayer.srcObject = remote_vid_stream[conn_id];
-        remoteVideoPlayer.load();
-      } else if (event.track.kind == "audio") {
-        remote_aud_stream[conn_id].getAudioTracks().forEach((t) => {
-          remote_aud_stream[conn_id].removeTrack(t);
-        });
-        remote_aud_stream[conn_id].addTrack(event.track);
-        var remoteAudioPlayer = document.getElementById("a_" + conn_id);
-        remoteAudioPlayer.srcObject = null;
-        remoteAudioPlayer.srcObject = remote_aud_stream[conn_id];
-      }
-    };
-    peers_conn_ids[conn_id] = conn_id;
-    peers_connections[conn_id] = connection;
-  }
+  signinTab.click(function () {
+    signUpContent.hide();
+    signInContent.show();
+  });
 
-  async function setOffer(connId) {
-    var connection = peers_connections[connId];
-    var offer = await connection.createOffer();
-    await connection.setLocalDescription(offer);
-    serverProcess(
-      JSON.stringify({ offer: connection.localDescription }),
-      connId,
-    );
-  }
+  signupTab.click(function () {
+    signInContent.hide();
+    signUpContent.show();
+  });
 
-  async function SDP_Process(message, from_connId) {
-    message = JSON.parse(message);
-    if (message.answer) {
-      await peers_connections[from_connId].setRemoteDescription(
-        new RTCSessionDescription(message.answer),
-      );
-    } else if (message.offer) {
-      if (!peers_connections[from_connId]) {
-        await setConnection(from_connId);
-      }
-      await peers_connections[from_connId].setRemoteDescription(
-        new RTCSessionDescription(message.offer),
-      );
-      var answer = await peers_connections[from_connId].createAnswer();
-      await peers_connections[from_connId].setLocalDescription(answer);
-      serverProcess(JSON.stringify({ answer: answer }), from_connId);
-    } else if (message.icecandidate) {
-      if (peers_connections[from_connId]) {
-        await setConnection(from_connId);
-      }
-      try {
-        await peers_connections[from_connId].addIceCandidate(
-          message.icecandidate,
-        );
-      } catch (error) {
-        console.error("Error adding ICE candidate:", error);
+  function validateCode(code) {
+    const codeToNum = parseInt(code);
+    let verified = false;
+    if (code) {
+      if (!isNaN(codeToNum) && code.length === 6) {
+        verified = true;
       }
     }
-  }
-  return {
-    setNewConnection: async function (conn_id) {
-      await setConnection(conn_id);
-    },
-    // We get these params from MyApp, since it communcates with the Server.
-    init: async function (SDP_function, myconn_id) {
-      await _init(SDP_function, myconn_id);
-    },
-    processClientFunction: async function (message, from_connId) {
-      await SDP_Process(message, from_connId);
-    },
-  };
-})();
-
-// TALK TO SERVER
-var MyApp = (function () {
-  var socket;
-  var userID;
-  var roomID;
-
-  function init(uid, roomId) {
-    userID = uid;
-    roomID = roomId;
-    event_process_for_signaling_server();
+    return verified;
   }
 
-  function addUser(other_user_id, conn_id) {
-    console.log(`User ${other_user_id} joined`);
-
-    var newJoinee = $("<div>", {
-      id: conn_id,
-      class: "joinee other",
-    }).append(
-      $("<img>", {
-        class: "joinee-pic",
-        alt: "",
-      }),
-      $("<h3>").text(other_user_id),
-      $("<video autoplay muted>", {
-        id: "v_" + conn_id,
-        autoplay: true,
-        playsinline: true,
-        style: "display: none;",
-      }),
-      $("<audio>", {
-        id: "a_" + conn_id,
-        autoplay: true,
-      }),
-    );
-
-    console.log("Appending new joinee to #joinees-horizontal");
-    $("#joinees-horizontal").append(newJoinee);
-    console.log("Total joinees:", $("#joinees-horizontal .joinee").length);
-  }
-
-  function event_process_for_signaling_server() {
-    console.log("event_process_for_signaling_server called");
-    console.log("userID:", userID, "roomID:", roomID);
-
-    socket = io.connect();
-
-    var SDP_function = function (data, to_conn_id) {
-      socket.emit("SDP_Process", {
-        message: data,
-        to_connId: to_conn_id,
-      });
-    };
-
-    socket.on("connect", function () {
-      console.log("Socket Connected to Client-Side " + socket.id);
-      console.log("socket.connected:", socket.connected);
-      console.log("Checking userID and roomID:", userID, roomID);
-
-      if (socket.connected) {
-        AppProcess.init(SDP_function, socket.id);
-        if (userID !== "" && roomID !== "") {
-          console.log("About to emit userconnect with:", {
-            displayName: userID,
-            roomID: roomID,
-          });
-
-          socket.emit("userconnect", {
-            displayName: userID,
-            roomID: roomID,
-          });
-          $("#pinned-pic").attr("src", "https://example.com/user-avatar.jpg");
-          $("#pinned-name").text(userID);
-          // $('#pinned-video').attr('src', 'https://example.com/user-video.mp4');
-          // $('#pinned-audio').attr('src', 'https://example.com/user-audio.mp3');
-          console.log("userconnect event emitted");
-        } else {
-          console.error(
-            "userID or roomID is empty! userID:",
-            userID,
-            "roomID:",
-            roomID,
-          );
-        }
-      } else {
-        console.error("Socket not connected!");
-      }
-    });
-
-    socket.on("newuser_joined", (data) => {
-      console.log("newuser_joined event received:", data);
-      addUser(data.other_user_id, data.conn_id);
-      // To establish connection between users without server
-      AppProcess.setNewConnection(data.conn_id);
-    });
-
-    socket.on("SDP_Process", async function (data) {
-      await AppProcess.processClientFunction(data.message, data.from_connId);
-    });
-
-    socket.on("connect_error", (error) => {
-      console.error("Socket connection error:", error);
-    });
-
-    socket.on("disconnect", (reason) => {
-      console.log("Socket disconnected. Reason:", reason);
-    });
-  }
-
-  return {
-    _init: function (uid, roomID) {
-      init(uid, roomID);
-    },
-  };
-})();
-
-(function () {
-  const params = new URLSearchParams(window.location.search);
-  const roomID = params.get("roomID");
-  const userID = sessionStorage.getItem("displayName");
-
-  // Not signed in → save target URL → redirect to auth
-  if (!userID) {
-    sessionStorage.setItem("redirectAfterAuth", window.location.href);
+  $("#signin-btn").click(function () {
     window.location.href = "auth.html";
-    return;
-  }
+  });
 
-  // No room in URL → back to home
-  if (!roomID) {
-    window.location.href = "index.html";
-    return;
-  }
+  $(".new-meet-btn").click(function () {
+    MEETCODE = Math.floor(Math.random() * 1000000 + 1);
+    window.location.href = "room.html?meetID=" + MEETCODE;
+  });
 
-  // Start camera/mic first, THEN join the room.
-  // This ensures local tracks exist before any RTCPeerConnection is created,
-  // so addTrack() works correctly when peers connect.
-
-  MyApp._init(userID, roomID);
-})();
+  $("#join-btn").click(function () {
+    const codeElement = $("#code-input");
+    const code = codeElement.val();
+    if (code) {
+      const verified = validateCode(code);
+      if (verified) {
+        window.location.href = "room.html?meetID=" + code;
+      } else {
+        modalOverlay.show();
+        modal.show();
+        modalTitle.text("Invalid Code");
+        modalContent.text("Please enter a valid 6-digit code");
+      }
+    } else {
+      codeElement.focus();
+      codeElement.css("border", "2px solid var(--danger");
+    }
+  });
+});

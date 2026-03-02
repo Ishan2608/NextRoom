@@ -12,218 +12,56 @@
             crossorigin="anonymous"
             referrerpolicy="no-referrer"
         ></script>
+        <script src="./public/js/app.js"></script>
     </head>
     <body>
-        <!-- NAV -->
-        <nav class="home-nav">
-            <div class="home-nav-left">
-                <img
-                    class="nav-logo-img"
-                    src="./public/assets/logo.png"
-                    alt="Logo of Next Room"
-                />
-                <p>Next Room</p>
+        <div class="modal-overlay"></div>
+        <div class="modal">
+            <div class="modalWrapper flex-col">
+                <h2 class="txt-md modal-title">Some heading</h2>
+                <p class="txt-nm modal-content">
+                    This is a simple modal for your understanding
+                </p>
             </div>
-            <div class="home-nav-right">
-                <!-- Shown as "Sign In" when logged out, "Sign Out" when logged in -->
-                <button id="auth-nav-btn">Sign In</button>
-                <button class="join-meeting-button">Join Meeting</button>
+        </div>
+
+        <nav class="flex-center">
+            <div class="nav-left">
+                <a href="/" class="row-center">
+                    <img id="nav-logo" src="./public/assets/logo.png" />
+                    <p>Next Room</p>
+                </a>
+            </div>
+            <div class="nav-right flex-row">
+                <button class="new-meet-btn">New Meeting</button>
+                <button id="signin-btn">Sign In</button>
+                <div class="mid-center user-initials">IR</div>
             </div>
         </nav>
 
-        <!-- MAIN -->
-        <main>
-            <!-- LEFT: Content -->
-            <div class="home-left">
-                <span class="home-badge">
-                    <span class="home-badge-dot"></span>
-                    Live &amp; Encrypted
-                </span>
-
-                <h1 class="txt-xl">
-                    Meet Without Limits.<br />
-                    <span class="accent-word">Connect</span> Instantly.
-                </h1>
-
-                <p class="home-sub">
-                    HD video meetings for your team. No downloads, no friction —
-                    just instant, secure collaboration.
+        <main class="flex-row two-cols">
+            <div class="left-col">
+                <h1 class="txt-lg">Welcome to Next Room</h1>
+                <p>
+                    Your one stop for virtual meetings. Support for chats and
+                    multi-user video call. Next Room is fast, reliable, and easy
+                    to use. Join a meeting with just a few clicks. Start a
+                    meeting with just a few clicks.
                 </p>
-
-                <div class="home-main-buttons">
-                    <button id="new-meeting-btn">+ New Meeting</button>
-                    <div class="join-code-group">
-                        <input
-                            type="text"
-                            name="meet-code"
-                            id="meet-code"
-                            placeholder="Enter meeting code"
-                        />
-                        <button id="join-action-button">Join</button>
-                    </div>
-                </div>
-
-                <div class="home-features">
-                    <span class="feat-pill">End-to-end encrypted</span>
-                    <span class="feat-pill">Up to 500 participants</span>
-                    <span class="feat-pill">No account needed</span>
+                <div class="home-main-btns flex-row">
+                    <button class="new-meet-btn txt-nm">New Meeting</button>
+                    <input
+                        id="code-input"
+                        class="txt-nm"
+                        type="text"
+                        placeholder="Enter Code"
+                    />
+                    <button id="join-btn" class="txt-nm">Join</button>
                 </div>
             </div>
-
-            <!-- RIGHT: Mock video card -->
-            <div class="home-right">
-                <div class="home-graphic-card">
-                    <div class="card-bar">
-                        <div class="card-bar-dots">
-                            <div class="card-dot"></div>
-                            <div class="card-dot"></div>
-                            <div class="card-dot"></div>
-                        </div>
-                        <span class="card-bar-label"
-                            >Next Room · 4 participants</span
-                        >
-                        <div class="card-rec">
-                            <div class="card-rec-dot"></div>
-                            REC
-                        </div>
-                    </div>
-
-                    <div class="card-grid">
-                        <div class="card-tile">
-                            <div class="tile-avatar av-1">AJ</div>
-                            <span class="tile-name">Alex J. (Host)</span>
-                        </div>
-                        <div class="card-tile">
-                            <div class="tile-avatar av-2">SM</div>
-                            <span class="tile-name">Sara M.</span>
-                        </div>
-                        <div class="card-tile">
-                            <div class="tile-avatar av-3">KP</div>
-                            <span class="tile-name">Kai P.</span>
-                        </div>
-                        <div class="card-tile">
-                            <div class="tile-avatar av-4">RO</div>
-                            <span class="tile-name">R. Ortiz</span>
-                        </div>
-                    </div>
-
-                    <div class="card-footer">
-                        <div class="card-ctrl">
-                            <svg
-                                width="13"
-                                height="13"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"
-                            >
-                                <path
-                                    d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"
-                                />
-                                <path d="M19 10v2a7 7 0 01-14 0v-2" />
-                            </svg>
-                        </div>
-                        <div class="card-ctrl">
-                            <svg
-                                width="13"
-                                height="13"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"
-                            >
-                                <path d="M23 7l-7 5 7 5V7z" />
-                                <rect
-                                    x="1"
-                                    y="5"
-                                    width="15"
-                                    height="14"
-                                    rx="2"
-                                />
-                            </svg>
-                        </div>
-                        <div class="card-ctrl danger">
-                            <svg
-                                width="13"
-                                height="13"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="white"
-                                stroke-width="2"
-                            >
-                                <path
-                                    d="M10.68 13.31a16 16 0 003.41 2.6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7 2 2 0 011.72 2v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07C9.44 18.01 8 16.57 6.7 14.91a19.79 19.79 0 01-3.07-8.63A2 2 0 015.61 4h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L10.68 13.31z"
-                                />
-                                <line x1="23" y1="1" x2="1" y2="23" />
-                            </svg>
-                        </div>
-                    </div>
-                </div>
+            <div class="right-col mid-center">
+                <img src="./public/assets/home-main-graphic.jpg" />
             </div>
         </main>
-
-        <script>
-            $(function () {
-                // ─────────────────────────────────────────────
-                // AUTH STATE
-                // Simple explanation: sessionStorage is like a temporary notepad
-                //   the browser keeps for this tab. We check if a displayName was
-                //   saved there after login. If yes → user is signed in.
-                // ─────────────────────────────────────────────
-                const isLoggedIn = !!sessionStorage.getItem("displayName");
-
-                // Update the nav button to reflect auth state
-                if (isLoggedIn) {
-                    $("#auth-nav-btn").text(
-                        `Sign Out ${sessionStorage.getItem("displayName")}`,
-                    );
-                } else {
-                    $("#auth-nav-btn").text("Sign In");
-                }
-
-                $("#auth-nav-btn").click(function () {
-                    if (isLoggedIn) {
-                        // Sign out: clear session and refresh so the page reflects the change
-                        sessionStorage.removeItem("displayName");
-                        window.location.reload();
-                    } else {
-                        window.location.href = "auth.html";
-                    }
-                });
-
-                // ─────────────────────────────────────────────
-                // AUTH GUARD HELPER
-                // If user is not signed in, save the target URL they wanted
-                // and redirect them to auth first. After login they'll
-                // automatically land on the target URL.
-                // ─────────────────────────────────────────────
-                function goToRoom(targetURL) {
-                    if (!isLoggedIn) {
-                        sessionStorage.setItem("redirectAfterAuth", targetURL);
-                        window.location.href = "auth.html";
-                        return;
-                    }
-                    window.location.href = targetURL;
-                }
-
-                $(document).on("click", ".join-meeting-button", function () {
-                    $("#meet-code").focus();
-                });
-
-                $(document).on("click", "#join-action-button", function () {
-                    const code = $("#meet-code").val().trim();
-                    if (!code) {
-                        alert("Please enter a valid meeting code.");
-                        return;
-                    }
-                    goToRoom(`room.html?roomID=${code}`);
-                });
-
-                $(document).on("click", "#new-meeting-btn", function () {
-                    const code = Math.floor(Math.random() * 1000000);
-                    goToRoom(`room.html?roomID=${code}`);
-                });
-            });
-        </script>
     </body>
 </html>
