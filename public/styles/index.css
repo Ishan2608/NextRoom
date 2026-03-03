@@ -17,9 +17,49 @@
 
 .home-main-btns {
     justify-content: space-evenly;
+    gap: 10px;
 }
 
 /*AUTHENTICATION*/
+
+#auth-main-left {
+    padding: 20px 40px;
+    align-items: stretch;
+    gap: 20px;
+}
+
+.tabs {
+    border-radius: 50px;
+}
+
+.tab {
+    padding: 10px 15px;
+    background-color: black;
+}
+
+.tab:hover {
+    cursor: pointer;
+    background-color: var(--secondary-bg);
+}
+
+.field {
+    gap: 8px;
+}
+
+#signup-tab {
+    border-top-right-radius: 50px;
+    border-bottom-right-radius: 50px;
+}
+
+#signin-tab {
+    border-top-left-radius: 50px;
+    border-bottom-left-radius: 50px;
+}
+
+#signup-tab.active,
+#signin-tab.active {
+    background-color: var(--secondary-bg);
+}
 
 #signup-tab-content {
     display: none;

@@ -19,7 +19,7 @@
             <div class="nav-left">
                 <a href="/" class="row-center">
                     <img id="nav-logo" src="./assets/logo.png" />
-                    <p>Next Room</p>
+                    <p class="nav-title">Next Room</p>
                 </a>
             </div>
             <div class="nav-right flex-row">
@@ -31,20 +31,69 @@
             </div>
         </nav>
         <main class="flex-row two-cols">
-            <div class="left-col flex-col">
-                <h2>Welcome to Auth</h2>
-
-                <div class="tabs">
-                    <button id="signin-tab">Sign In</button>
-                    <button id="signup-tab">Sign Up</button>
+            <div id="auth-main-left" class="flex-col">
+                <div class="tabs flex-row">
+                    <p id="signin-tab" class="txt-nm tab active">Sign In</p>
+                    <p id="signup-tab" class="txt-nm tab">Sign Up</p>
                 </div>
 
                 <div class="tab-content">
                     <div id="signin-tab-content">
-                        <h2>Sign In</h2>
+                        <form class="flex-col">
+                            <div class="field flex-col">
+                                <label>Email</label>
+                                <input
+                                    id="signin-email"
+                                    type="email"
+                                    name="signin-email"
+                                />
+                            </div>
+                            <div class="field flex-col"></div>
+                            <label>Password</label>
+                            <input
+                                id="signin-pass"
+                                type="password"
+                                name="signin-password"
+                            />
+                            <button>Login</button>
+                        </form>
                     </div>
                     <div id="signup-tab-content">
-                        <h2>Sign Up</h2>
+                        <form class="flex-col">
+                            <div class="field flex-col">
+                                <label>Username</label>
+                                <input
+                                    id="signup-username"
+                                    type="text"
+                                    name="username"
+                                />
+                            </div>
+                            <div class="field flex-col">
+                                <label>Email</label>
+                                <input
+                                    id="signup-email"
+                                    type="email"
+                                    name="signup-email"
+                                />
+                            </div>
+                            <div class="field flex-col">
+                                <label>Password</label>
+                                <input
+                                    id="signup-password"
+                                    type="password"
+                                    name="signup-password"
+                                />
+                            </div>
+                            <div class="field flex-col">
+                                <label>Confirm Password</label>
+                                <input
+                                    id="confirm-password"
+                                    type="password"
+                                    name="confirm-password"
+                                />
+                            </div>
+                            <button>Register</button>
+                        </form>
                     </div>
                 </div>
             </div>

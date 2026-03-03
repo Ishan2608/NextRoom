@@ -17,11 +17,9 @@
     box-sizing: border-box;
     font-family: Geneva, "Lucida Grande", Tahoma, sans-serif;
     color: var(--txt-color);
-    /*border: 1px solid white;*/
 }
 
 body {
-    height: 100%;
     max-width: 1440px;
     margin: auto;
     background-color: var(--primary-bg);
@@ -42,15 +40,12 @@ main {
     height: 100%;
 }
 
-nav * {
-    font-size: var(--txt-nm);
-}
-
 button {
     padding: 8px 10px;
     border-radius: 4px;
     border: 1px solid var(--primary-color);
     background-color: var(--primary-color);
+    font-size: var(--txt-nm);
 }
 
 button:hover {
@@ -58,13 +53,21 @@ button:hover {
     background-color: var(--secondary-bg);
 }
 
+form {
+    gap: 10px;
+}
+
+label {
+    font-size: var(--txt-nm);
+}
+
 input {
     outline: none;
     border: none;
     padding: 8px 10px;
-    border: 2px solid var(---primary-color);
+    border: 2px solid var(--primary-color);
     border-radius: 4px;
-    background-color: var(--secondary-bg-bg);
+    background-color: var(--secondary-bg);
 }
 
 input:focus {
@@ -88,15 +91,12 @@ input:focus {
     display: flex;
     flex-direction: row;
     align-items: center;
-    gap: 10px;
 }
 
 .flex-col {
     display: flex;
     flex-direction: column;
     justify-content: space-evenly;
-    align-items: center;
-    gap: 20px;
 }
 
 .user-initials {
@@ -156,6 +156,10 @@ input:focus {
     padding: 30px 30px;
 }
 
+.nav-title {
+    font-size: var(--txt-nm);
+}
+
 .nav-left a {
     text-decoration: none;
     color: var(--txt-color);
@@ -164,4 +168,8 @@ input:focus {
 #nav-logo {
     width: 30px;
     height: 30px;
+}
+
+.nav-right {
+    gap: 10px;
 }

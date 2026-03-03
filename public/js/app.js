@@ -29,11 +29,15 @@ $(document).ready(function () {
   const signUpContent = $("#signup-tab-content");
 
   signinTab.click(function () {
+    signinTab.addClass("active");
+    signupTab.removeClass("active");
     signUpContent.hide();
     signInContent.show();
   });
 
   signupTab.click(function () {
+    signinTab.removeClass("active");
+    signupTab.addClass("active");
     signInContent.hide();
     signUpContent.show();
   });
