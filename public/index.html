@@ -35,7 +35,12 @@
             <div class="nav-right flex-row">
                 <button class="new-meet-btn">New Meeting</button>
                 <button id="signin-btn">Sign In</button>
-                <div class="mid-center user-initials">IR</div>
+                <div class="mid-center user-initials">
+                    <script>
+                        const user = localStorage.get("user");
+                        return user.username;
+                    </script>
+                </div>
             </div>
         </nav>
 
@@ -60,7 +65,7 @@
                 </div>
             </div>
             <div class="right-col mid-center">
-                <img src="./public/assets/home-main-graphic.jpg" />
+                <img src="./assets/home-main-graphic.jpg" />
             </div>
         </main>
     </body>

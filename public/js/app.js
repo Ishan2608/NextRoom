@@ -41,7 +41,36 @@ $(document).ready(function () {
     signInContent.hide();
     signUpContent.show();
   });
+  // METHODS FOR AUTH PAGE
+  // const signInForm = $('#signin-form');
+  // const signUpForm = $('#signup-form');
 
+  $("#signup-form, #signin-form").on("submit", function (event) {
+    event.preventDefault();
+    const formId = $(this).attr("id");
+    const apiEndPoint =
+      formId === "signup-form" ? "/auth/signup" : "/auth/signin";
+
+    const formData = Object.fromEntries(new FormData(this));
+    // console.log(formData);
+    $.ajax({
+      url: apiEndPoint,
+      type: "POST",
+      contentType: "application/json",
+      data: JSON.stringify(formData),
+      success: function (res) {
+        localStorage.setItem("user", JSON.stringify(res.user));
+        const user = localStorage.getItem("user");
+        console.log(user);
+        // window.location.href = "index.html";
+      },
+      error: function (xhr) {
+        console.error(`Error During Auth = ${xhr.statusText}`);
+      },
+    });
+  });
+
+  // METHODS FOR HOME PAGE
   function validateCode(code) {
     const codeToNum = parseInt(code);
     let verified = false;

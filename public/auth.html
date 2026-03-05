@@ -39,13 +39,13 @@
 
                 <div class="tab-content">
                     <div id="signin-tab-content">
-                        <form class="flex-col">
+                        <form id="signin-form" class="flex-col">
                             <div class="field flex-col">
                                 <label>Email</label>
                                 <input
                                     id="signin-email"
                                     type="email"
-                                    name="signin-email"
+                                    name="email"
                                 />
                             </div>
                             <div class="field flex-col"></div>
@@ -53,13 +53,13 @@
                             <input
                                 id="signin-pass"
                                 type="password"
-                                name="signin-password"
+                                name="password"
                             />
-                            <button>Login</button>
+                            <button type="submit">Login</button>
                         </form>
                     </div>
                     <div id="signup-tab-content">
-                        <form class="flex-col">
+                        <form id="signup-form" class="flex-col">
                             <div class="field flex-col">
                                 <label>Username</label>
                                 <input
@@ -73,7 +73,7 @@
                                 <input
                                     id="signup-email"
                                     type="email"
-                                    name="signup-email"
+                                    name="email"
                                 />
                             </div>
                             <div class="field flex-col">
@@ -81,7 +81,7 @@
                                 <input
                                     id="signup-password"
                                     type="password"
-                                    name="signup-password"
+                                    name="password"
                                 />
                             </div>
                             <div class="field flex-col">
@@ -92,7 +92,7 @@
                                     name="confirm-password"
                                 />
                             </div>
-                            <button>Register</button>
+                            <button type="submit">Register</button>
                         </form>
                     </div>
                 </div>
