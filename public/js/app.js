@@ -1,9 +1,18 @@
+// GLOBAL VARIABLES
+var MEETCODE = 0;
+var USER = {};
+var ISLOGGED = false;
+
 $(document).ready(function () {
-  // GLOBAL VARIABLES
-  let MEETCODE = 0;
+  if (window.location.href !== "http://localhost:3000/index.html") {
+    if (!ISLOGGED) {
+      window.location.href = "index.html";
+    }
+  }
 
   // HOME PAGE ELEMENTS
   const signinBtn = $("#signin-btn");
+  const profilePic = $("#user-initials");
 
   // Get GLOBAL ELEMENTS - MODAL and MODAL OVERLAY
   const modalOverlay = $(".modal-overlay");
@@ -42,8 +51,19 @@ $(document).ready(function () {
     signUpContent.show();
   });
   // METHODS FOR AUTH PAGE
-  // const signInForm = $('#signin-form');
-  // const signUpForm = $('#signup-form');
+  function getUser() {
+    return JSON.parse(localStorage.getItem("user")) || USER;
+  }
+
+  function getUserInitials() {
+    const username = getUser().username;
+    if (!username) return "U";
+    const names = username.trim().split(" ");
+    if (names.length >= 2) {
+      return (names[0][0] + names[1][0]).toUpperCase();
+    }
+    return username.substring(0, 2).toUpperCase();
+  }
 
   $("#signup-form, #signin-form").on("submit", function (event) {
     event.preventDefault();
@@ -52,7 +72,6 @@ $(document).ready(function () {
       formId === "signup-form" ? "/auth/signup" : "/auth/signin";
 
     const formData = Object.fromEntries(new FormData(this));
-    // console.log(formData);
     $.ajax({
       url: apiEndPoint,
       type: "POST",
@@ -60,9 +79,10 @@ $(document).ready(function () {
       data: JSON.stringify(formData),
       success: function (res) {
         localStorage.setItem("user", JSON.stringify(res.user));
-        const user = localStorage.getItem("user");
-        console.log(user);
-        // window.location.href = "index.html";
+        USER = localStorage.getItem("user");
+        ISLOGGED = true;
+        console.log(`Returned user data= ${USER}`);
+        window.location.href = "index.html";
       },
       error: function (xhr) {
         console.error(`Error During Auth = ${xhr.statusText}`);
@@ -98,6 +118,7 @@ $(document).ready(function () {
       const verified = validateCode(code);
       if (verified) {
         window.location.href = "room.html?meetID=" + code;
+        navMeetCode.text(MEETCODE);
       } else {
         modalOverlay.show();
         modal.show();

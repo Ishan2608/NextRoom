@@ -34,13 +34,8 @@
             </div>
             <div class="nav-right flex-row">
                 <button class="new-meet-btn">New Meeting</button>
-                <button id="signin-btn">Sign In</button>
-                <div class="mid-center user-initials">
-                    <script>
-                        const user = localStorage.get("user");
-                        return user.username;
-                    </script>
-                </div>
+                <a id="signin-btn" href="/auth.html"> Sign In </a>
+                <div class="mid-center user-initials"></div>
             </div>
         </nav>
 

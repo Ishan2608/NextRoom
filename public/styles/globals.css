@@ -40,7 +40,8 @@ main {
     height: 100%;
 }
 
-button {
+button,
+.btn {
     padding: 8px 10px;
     border-radius: 4px;
     border: 1px solid var(--primary-color);
@@ -48,7 +49,8 @@ button {
     font-size: var(--txt-nm);
 }
 
-button:hover {
+button:hover,
+.btn:hover {
     cursor: pointer;
     background-color: var(--secondary-bg);
 }
