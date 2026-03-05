@@ -4,11 +4,12 @@ var USER = {};
 var ISLOGGED = false;
 
 $(document).ready(function () {
-  if (window.location.href !== "http://localhost:3000/index.html") {
-    if (!ISLOGGED) {
-      window.location.href = "index.html";
-    }
-  }
+  // If user is not logged in, redirect them to home
+  // if (window.location.href === "http://localhost:3000/room.html") {
+  //   if (!ISLOGGED) {
+  //     window.location.href = "index.html";
+  //   }
+  // }
 
   // HOME PAGE ELEMENTS
   const signinBtn = $("#signin-btn");
@@ -53,6 +54,10 @@ $(document).ready(function () {
   // METHODS FOR AUTH PAGE
   function getUser() {
     return JSON.parse(localStorage.getItem("user")) || USER;
+  }
+
+  function signOut() {
+    localStorage.clear();
   }
 
   function getUserInitials() {
