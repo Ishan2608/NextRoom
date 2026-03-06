@@ -13,6 +13,25 @@ function showModal(title, message) {
 
   modal.show();
   modalOverlay.show();
+
+  modalOverlay.click(function () {
+    modalOverlay.hide();
+    modal.hide();
+  });
+}
+
+function getUserInitials() {
+  const name = USER.username || "User";
+  const parts = name.trim().split(" ");
+  return parts.length > 1
+    ? (parts[0][0] + parts[1][0]).toUpperCase()
+    : name.substring(0, 2).toUpperCase();
+}
+
+function generateMeetCode() {
+  const min = 100000;
+  const max = 999999;
+  return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
 // Validate Meeting Code.
@@ -25,11 +44,6 @@ function validateCode(code) {
     }
   }
   return verified;
-}
-
-function getUrlParameter(name) {
-  const params = new URLSearchParams(window.location.search);
-  return params.get(name);
 }
 
 function getURLParameter(name) {
@@ -50,11 +64,19 @@ $(document).ready(function () {
     const signinBtn = $("#signin-btn");
     const profilePic = $("#profile-pic");
 
+    // if user is indeed logged in
     if (ISLOGGED) {
       signinBtn.text("Sign Out").attr("href", "#").attr("id", "signout-btn");
       profilePic.text(getUserInitials()).show();
 
+      // Do not allow to visit auth page.
+      if (window.location.pathname.includes("auth.html")) {
+        window.location.href = "index.html";
+      }
+
+      // If user is Logged in and on Rooms PAGE
       if (window.location.pathname.includes("room.html")) {
+        // Show meeting code in Navbar
         const navMeetCode = $("#nav-meet-code");
         const idFromURL = getURLParameter("meetID");
         if (idFromURL) {
@@ -87,12 +109,37 @@ $(document).ready(function () {
     window.location.href = "index.html";
   });
 
-  // Get GLOBAL ELEMENTS - MODAL and MODAL OVERLAY
-  const modalOverlay = $(".modal-overlay");
+  $(".new-meet-btn").click(function () {
+    if (!ISLOGGED) {
+      const title = "Un-Authorized Activity";
+      const body = "You need to be loggedin in to start a new meeting";
+      showModal(title, body);
+    }
+    // Generates a random number between 100,000 and 999,999
+    const meetCode = generateMeetCode();
+    window.location.href = "room.html?meetID=" + meetCode;
+  });
 
-  modalOverlay.click(function () {
-    modalOverlay.hide();
-    modal.hide();
+  $("#join-btn").click(function () {
+    const codeElement = $("#code-input");
+    const code = codeElement.val();
+    if (code) {
+      const verified = validateCode(code);
+      if (verified) {
+        window.location.href = "room.html?meetID=" + code;
+      } else {
+        const title = "Invalid Code";
+        const body = "Please enter a valid 6-digit code";
+        showModal(title, body);
+      }
+    } else {
+      codeElement.focus();
+      codeElement.css("border", "2px solid var(--danger");
+    }
+  });
+
+  $("#signin-btn").click(function () {
+    window.location.href = "auth.html";
   });
 
   // AUTH PAGE ELEMENTS
@@ -114,16 +161,8 @@ $(document).ready(function () {
     signInContent.hide();
     signUpContent.show();
   });
-  // METHODS FOR AUTH PAGE
 
-  function getUserInitials() {
-    const name = USER.username || "User";
-    const parts = name.trim().split(" ");
-    return parts.length > 1
-      ? (parts[0][0] + parts[1][0]).toUpperCase()
-      : name.substring(0, 2).toUpperCase();
-  }
-
+  // HANDLE AUTH FORM SUBMISSION
   $("#signup-form, #signin-form").on("submit", function (event) {
     event.preventDefault();
     const formId = $(this).attr("id");
@@ -149,38 +188,16 @@ $(document).ready(function () {
     });
   });
 
-  $("#signin-btn").click(function () {
-    window.location.href = "auth.html";
+  // ROOMS ELEMENTS
+  $(".share-link-btn").on("click", function () {
+    navigator.clipboard.writeText(MEETCODE).then(() => {
+      const title = "Meeting Link Copied";
+      const body = `Meeting Link = ${MEETCODE} has been copied to Clipboard`;
+      showModal(title, body);
+    });
   });
-
-  $(".new-meet-btn").click(function () {
-    if (!ISLOGGED) {
-      return;
-    }
-    // Generates a random number between 100,000 and 999,999
-    const min = 100000;
-    const max = 999999;
-    MEETCODE = Math.floor(Math.random() * (max - min + 1)) + min;
-    window.location.href = "room.html?meetID=" + MEETCODE;
-  });
-
-  $("#join-btn").click(function () {
-    const codeElement = $("#code-input");
-    const code = codeElement.val();
-    if (code) {
-      const verified = validateCode(code);
-      if (verified) {
-        window.location.href = "room.html?meetID=" + code;
-        navMeetCode.text(MEETCODE);
-      } else {
-        modalOverlay.show();
-        modal.show();
-        modalTitle.text("Invalid Code");
-        modalContent.text("Please enter a valid 6-digit code");
-      }
-    } else {
-      codeElement.focus();
-      codeElement.css("border", "2px solid var(--danger");
-    }
+  $(".leave-call-btn").on("click", function () {
+    // disconnect socket and WebRTC connection...
+    window.location.href = "index.html";
   });
 });
