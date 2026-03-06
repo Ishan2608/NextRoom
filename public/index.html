@@ -15,16 +15,16 @@
         <script src="./js/app.js"></script>
     </head>
     <body>
+        <!-- MODAL -->
         <div class="modal-overlay"></div>
         <div class="modal">
             <div class="modalWrapper flex-col">
                 <h2 class="txt-md modal-title">Some heading</h2>
-                <p class="txt-nm modal-content">
-                    This is a simple modal for your understanding
-                </p>
+                <p class="txt-nm modal-content">This is a simple modal for your understanding</p>
             </div>
         </div>
 
+        <!-- NAV -->
         <nav class="flex-center">
             <div class="nav-left">
                 <a href="/" class="row-center">
@@ -39,29 +39,292 @@
             </div>
         </nav>
 
+        <!-- MAIN -->
         <main class="flex-row two-cols">
             <div class="left-col">
-                <h1 class="txt-lg">Welcome to Next Room</h1>
+                <div class="home-badge">
+                    <span class="home-badge-dot"></span>
+                    Fast &amp; Secure Video Meetings
+                </div>
+                <h1 class="txt-lg">Your Space to<br/>Meet, Talk &amp; Connect</h1>
                 <p>
-                    Your one stop for virtual meetings. Support for chats and
-                    multi-user video call. Next Room is fast, reliable, and easy
-                    to use. Join a meeting with just a few clicks. Start a
-                    meeting with just a few clicks.
+                    Next Room brings your team together with crystal-clear video, real-time chat, and screen sharing — all in one place. No downloads, no friction.
                 </p>
                 <div class="home-main-btns flex-row">
-                    <button class="new-meet-btn txt-nm">New Meeting</button>
-                    <input
-                        id="code-input"
-                        class="txt-nm"
-                        type="text"
-                        placeholder="Enter Code"
-                    />
-                    <button id="join-btn" class="txt-nm">Join</button>
+                    <button class="new-meet-btn txt-nm">+ New Meeting</button>
+                    <input id="code-input" class="txt-nm" type="text" placeholder="Enter room code" />
+                    <button id="join-btn" class="txt-nm">Join →</button>
                 </div>
             </div>
             <div class="right-col mid-center">
-                <img src="./assets/home-main-graphic.jpg" />
+                <div class="hero-visual">
+                    <!-- Ambient glow blobs -->
+                    <div class="blob blob-1"></div>
+                    <div class="blob blob-2"></div>
+
+                    <!-- Main pinned speaker card -->
+                    <div class="hv-card hv-main">
+                        <div class="hv-avatar" style="--c1:#8715d4;--c2:#a855f7;">AR</div>
+                        <div class="hv-info">
+                            <span class="hv-name">Aryan Shetty</span>
+                            <span class="hv-role">Presenting</span>
+                        </div>
+                        <div class="hv-live-badge">
+                            <span class="hv-live-dot"></span> LIVE
+                        </div>
+                        <!-- Fake waveform -->
+                        <div class="hv-wave">
+                            <span></span><span></span><span></span><span></span><span></span>
+                            <span></span><span></span><span></span><span></span><span></span>
+                        </div>
+                    </div>
+
+                    <!-- Participant chips -->
+                    <div class="hv-participants">
+                        <div class="hv-chip">
+                            <div class="hv-avatar sm" style="--c1:#6d28d9;--c2:#7c3aed;">AG</div>
+                            <span>Aditya</span>
+                            <span class="hv-mic-icon active">🎙</span>
+                        </div>
+                        <div class="hv-chip">
+                            <div class="hv-avatar sm" style="--c1:#9333ea;--c2:#c084fc;">PB</div>
+                            <span>Puneet</span>
+                            <span class="hv-mic-icon">🔇</span>
+                        </div>
+                        <div class="hv-chip">
+                            <div class="hv-avatar sm" style="--c1:#7e22ce;--c2:#a21caf;">RM</div>
+                            <span>Rahul</span>
+                            <span class="hv-mic-icon active">🎙</span>
+                        </div>
+                    </div>
+
+                    <!-- Floating chat bubble -->
+                    <div class="hv-chat-bubble hv-bubble-1">
+                        <span class="hv-bubble-avatar" style="--c1:#8715d4;--c2:#a855f7;">AG</span>
+                        <span>Let's get started! 🚀</span>
+                    </div>
+                    <div class="hv-chat-bubble hv-bubble-2">
+                        <span class="hv-bubble-avatar" style="--c1:#7e22ce;--c2:#a21caf;">RM</span>
+                        <span>Sharing screen now</span>
+                    </div>
+
+                    <!-- Control bar mock -->
+                    <div class="hv-controls">
+                        <div class="hv-ctrl-btn active">🎙</div>
+                        <div class="hv-ctrl-btn active">📹</div>
+                        <div class="hv-ctrl-btn">🖥</div>
+                        <div class="hv-ctrl-btn danger">📵</div>
+                    </div>
+                </div>
             </div>
         </main>
     </body>
+
+    <style>
+        /* ── Hero Visual Container ── */
+        .hero-visual {
+            position: relative;
+            width: 100%;
+            max-width: 480px;
+            aspect-ratio: 4/3;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+        }
+
+        /* Ambient blobs */
+        .blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(60px);
+            pointer-events: none;
+            z-index: 0;
+        }
+        .blob-1 {
+            width: 300px; height: 300px;
+            background: radial-gradient(circle, rgba(135,21,212,0.35), transparent 70%);
+            top: -30px; right: -20px;
+            animation: blobFloat 7s ease-in-out infinite;
+        }
+        .blob-2 {
+            width: 200px; height: 200px;
+            background: radial-gradient(circle, rgba(168,85,247,0.25), transparent 70%);
+            bottom: 0px; left: 10px;
+            animation: blobFloat 9s ease-in-out infinite reverse;
+        }
+        @keyframes blobFloat {
+            0%,100% { transform: translate(0,0) scale(1); }
+            50%      { transform: translate(10px,-15px) scale(1.05); }
+        }
+
+        /* ── Main Card ── */
+        .hv-card {
+            position: relative;
+            z-index: 2;
+            background: rgba(26,24,37,0.85);
+            border: 1px solid rgba(135,21,212,0.3);
+            border-radius: 20px;
+            backdrop-filter: blur(16px);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 40px rgba(135,21,212,0.2);
+            padding: 20px 24px;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            animation: cardIn 0.7s cubic-bezier(.22,1,.36,1) both;
+        }
+        @keyframes cardIn {
+            from { opacity:0; transform: translateY(20px); }
+            to   { opacity:1; transform: translateY(0); }
+        }
+
+        .hv-avatar {
+            width: 48px; height: 48px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--c1), var(--c2));
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Syne', sans-serif; font-weight: 700; font-size: 15px;
+            flex-shrink: 0;
+            box-shadow: 0 0 16px rgba(135,21,212,0.4);
+        }
+        .hv-avatar.sm { width: 30px; height: 30px; font-size: 11px; }
+
+        .hv-info { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+        .hv-name { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 15px; }
+        .hv-role { font-size: 12px; color: #a855f7; font-weight: 500; }
+
+        .hv-live-badge {
+            display: flex; align-items: center; gap: 5px;
+            background: rgba(135,21,212,0.2);
+            border: 1px solid rgba(135,21,212,0.4);
+            border-radius: 50px;
+            padding: 4px 10px;
+            font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+            color: #c084fc;
+        }
+        .hv-live-dot {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: #c084fc;
+            box-shadow: 0 0 8px #c084fc;
+            animation: pulse 1.5s infinite;
+        }
+
+        /* Waveform */
+        .hv-wave {
+            display: flex; align-items: center; gap: 3px;
+            height: 30px; margin-left: 4px;
+        }
+        .hv-wave span {
+            display: block;
+            width: 3px; border-radius: 4px;
+            background: linear-gradient(to top, var(--primary-color), var(--accent));
+            animation: wave 1.2s ease-in-out infinite;
+        }
+        .hv-wave span:nth-child(1) { animation-delay: 0.0s; }
+        .hv-wave span:nth-child(2) { animation-delay: 0.1s; }
+        .hv-wave span:nth-child(3) { animation-delay: 0.2s; }
+        .hv-wave span:nth-child(4) { animation-delay: 0.3s; }
+        .hv-wave span:nth-child(5) { animation-delay: 0.4s; }
+        .hv-wave span:nth-child(6) { animation-delay: 0.3s; }
+        .hv-wave span:nth-child(7) { animation-delay: 0.2s; }
+        .hv-wave span:nth-child(8) { animation-delay: 0.1s; }
+        .hv-wave span:nth-child(9) { animation-delay: 0.0s; }
+        .hv-wave span:nth-child(10){ animation-delay: 0.15s; }
+        @keyframes wave {
+            0%,100% { height: 6px; }
+            50%      { height: 26px; }
+        }
+
+        /* ── Participant Chips ── */
+        .hv-participants {
+            display: flex; flex-direction: row; gap: 10px;
+            z-index: 2; width: 100%;
+            animation: cardIn 0.7s 0.15s cubic-bezier(.22,1,.36,1) both;
+        }
+        .hv-chip {
+            flex: 1;
+            display: flex; align-items: center; gap: 8px;
+            background: rgba(26,24,37,0.7);
+            border: 1px solid rgba(135,21,212,0.2);
+            border-radius: 12px;
+            padding: 10px 12px;
+            backdrop-filter: blur(10px);
+            font-size: 13px; font-weight: 500;
+            transition: border-color 0.2s;
+        }
+        .hv-chip:hover { border-color: rgba(168,85,247,0.5); }
+        .hv-mic-icon { margin-left: auto; font-size: 12px; opacity: 0.4; }
+        .hv-mic-icon.active { opacity: 1; }
+
+        /* ── Floating Chat Bubbles ── */
+        .hv-chat-bubble {
+            position: absolute;
+            display: flex; align-items: center; gap: 8px;
+            background: rgba(26,24,37,0.9);
+            border: 1px solid rgba(135,21,212,0.25);
+            border-radius: 50px;
+            padding: 8px 14px 8px 8px;
+            font-size: 13px;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+            z-index: 3;
+            white-space: nowrap;
+        }
+        .hv-bubble-avatar {
+            width: 26px; height: 26px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--c1), var(--c2));
+            display: flex; align-items: center; justify-content: center;
+            font-size: 10px; font-weight: 700; font-family: 'Syne', sans-serif;
+            flex-shrink: 0;
+        }
+        .hv-bubble-1 {
+            top: 6%; right: -8%;
+            animation: bubbleFloat1 0.6s 0.4s cubic-bezier(.22,1,.36,1) both;
+        }
+        .hv-bubble-2 {
+            bottom: 18%; left: -6%;
+            animation: bubbleFloat2 0.6s 0.6s cubic-bezier(.22,1,.36,1) both;
+        }
+        @keyframes bubbleFloat1 {
+            from { opacity:0; transform: translateX(20px); }
+            to   { opacity:1; transform: translateX(0); }
+        }
+        @keyframes bubbleFloat2 {
+            from { opacity:0; transform: translateX(-20px); }
+            to   { opacity:1; transform: translateX(0); }
+        }
+
+        /* ── Control Bar Mock ── */
+        .hv-controls {
+            display: flex; gap: 10px;
+            z-index: 2;
+            animation: cardIn 0.6s 0.3s cubic-bezier(.22,1,.36,1) both;
+        }
+        .hv-ctrl-btn {
+            width: 44px; height: 44px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px;
+            background: rgba(26,24,37,0.8);
+            border: 1px solid rgba(135,21,212,0.2);
+            cursor: default;
+            transition: transform 0.2s;
+        }
+        .hv-ctrl-btn.active  { background: linear-gradient(135deg,#8715d4,#a855f7); border-color: transparent; }
+        .hv-ctrl-btn.danger  { background: #e32817; border-color: transparent; }
+        .hv-ctrl-btn:hover   { transform: translateY(-3px); }
+    </style>
+
+    <script>
+        // Randomise wave bar heights continuously for a lively feel
+        const bars = document.querySelectorAll('.hv-wave span');
+        function randomiseWave() {
+            bars.forEach(bar => {
+                const h = Math.floor(Math.random() * 22) + 6;
+                bar.style.height = h + 'px';
+            });
+        }
+        setInterval(randomiseWave, 300);
+    </script>
 </html>

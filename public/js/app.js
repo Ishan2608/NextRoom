@@ -114,6 +114,7 @@ $(document).ready(function () {
       const title = "Un-Authorized Activity";
       const body = "You need to be loggedin in to start a new meeting";
       showModal(title, body);
+      return;
     }
     // Generates a random number between 100,000 and 999,999
     const meetCode = generateMeetCode();
@@ -196,8 +197,10 @@ $(document).ready(function () {
       showModal(title, body);
     });
   });
-  $(".leave-call-btn").on("click", function () {
+  $(".leave-call-btn, button#hangup-btn").on("click", function () {
     // disconnect socket and WebRTC connection...
     window.location.href = "index.html";
   });
+  $("#vid-pinned-overlay-profile").text(getUserInitials());
+  $("#vid-pinned-overlay-name").text(USER.username);
 });

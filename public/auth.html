@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Next Room</title>
+        <title>Next Room — Sign In</title>
         <link rel="stylesheet" href="./styles/globals.css" />
         <link rel="stylesheet" href="./styles/index.css" />
         <script
@@ -15,15 +15,16 @@
         <script src="./js/app.js"></script>
     </head>
     <body>
+        <!-- MODAL -->
         <div class="modal-overlay"></div>
         <div class="modal">
             <div class="modalWrapper flex-col">
                 <h2 class="txt-md modal-title">Some heading</h2>
-                <p class="txt-nm modal-content">
-                    This is a simple modal for your understanding
-                </p>
+                <p class="txt-nm modal-content">This is a simple modal for your understanding</p>
             </div>
         </div>
+
+        <!-- NAV -->
         <nav class="flex-center">
             <div class="nav-left">
                 <a href="/" class="row-center">
@@ -37,7 +38,39 @@
                 <div id="profile-pic" class="mid-center user-initials"></div>
             </div>
         </nav>
-        <main class="flex-row two-cols">
+
+        <!-- MAIN -->
+        <main class="auth-page-main">
+            <!-- Left side: marketing blurb -->
+            <div class="auth-headline">
+                <h2>Meet without limits.</h2>
+                <p>Join thousands of teams who rely on Next Room for seamless, high-quality video meetings every day.</p>
+                <div class="auth-features">
+                    <div class="auth-feature">
+                        <div class="auth-feature-icon">🎥</div>
+                        <div class="auth-feature-text">
+                            <strong>HD Video Calling</strong>
+                            Crystal-clear video for up to 50 participants
+                        </div>
+                    </div>
+                    <div class="auth-feature">
+                        <div class="auth-feature-icon">💬</div>
+                        <div class="auth-feature-text">
+                            <strong>Live Chat</strong>
+                            Real-time messaging during calls
+                        </div>
+                    </div>
+                    <div class="auth-feature">
+                        <div class="auth-feature-icon">🔗</div>
+                        <div class="auth-feature-text">
+                            <strong>Instant Sharing</strong>
+                            Share a link, anyone can join
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right side: form card -->
             <div id="auth-main-left" class="flex-col">
                 <div class="tabs flex-row">
                     <p id="signin-tab" class="txt-nm tab active">Sign In</p>
@@ -45,66 +78,60 @@
                 </div>
 
                 <div class="tab-content">
+                    <!-- SIGN IN -->
                     <div id="signin-tab-content">
                         <form id="signin-form" class="flex-col">
                             <div class="field flex-col">
                                 <label>Email</label>
-                                <input
-                                    id="signin-email"
-                                    type="email"
-                                    name="email"
-                                />
+                                <input id="signin-email" type="email" name="email" placeholder="you@example.com" />
                             </div>
-                            <div class="field flex-col"></div>
-                            <label>Password</label>
-                            <input
-                                id="signin-pass"
-                                type="password"
-                                name="password"
-                            />
-                            <button type="submit">Login</button>
+                            <div class="field flex-col">
+                                <label>Password</label>
+                                <input id="signin-pass" type="password" name="password" placeholder="••••••••" />
+                            </div>
+                            <button type="submit" class="auth-submit-btn">Log In</button>
                         </form>
                     </div>
+
+                    <!-- SIGN UP -->
                     <div id="signup-tab-content">
                         <form id="signup-form" class="flex-col">
                             <div class="field flex-col">
                                 <label>Username</label>
-                                <input
-                                    id="signup-username"
-                                    type="text"
-                                    name="username"
-                                />
+                                <input id="signup-username" type="text" name="username" placeholder="yourname" />
                             </div>
                             <div class="field flex-col">
                                 <label>Email</label>
-                                <input
-                                    id="signup-email"
-                                    type="email"
-                                    name="email"
-                                />
+                                <input id="signup-email" type="email" name="email" placeholder="you@example.com" />
                             </div>
                             <div class="field flex-col">
                                 <label>Password</label>
-                                <input
-                                    id="signup-password"
-                                    type="password"
-                                    name="password"
-                                />
+                                <input id="signup-password" type="password" name="password" placeholder="••••••••" />
                             </div>
                             <div class="field flex-col">
                                 <label>Confirm Password</label>
-                                <input
-                                    id="confirm-password"
-                                    type="password"
-                                    name="confirm-password"
-                                />
+                                <input id="confirm-password" type="password" name="confirm-password" placeholder="••••••••" />
                             </div>
-                            <button type="submit">Register</button>
+                            <button type="submit" class="auth-submit-btn">Create Account</button>
                         </form>
                     </div>
                 </div>
             </div>
-            <div class="right-col"></div>
         </main>
+
+        <script>
+            $("#signin-tab").on("click", function () {
+                $("#signin-tab").addClass("active");
+                $("#signup-tab").removeClass("active");
+                $("#signin-tab-content").show();
+                $("#signup-tab-content").hide();
+            });
+            $("#signup-tab").on("click", function () {
+                $("#signup-tab").addClass("active");
+                $("#signin-tab").removeClass("active");
+                $("#signup-tab-content").show();
+                $("#signin-tab-content").hide();
+            });
+        </script>
     </body>
 </html>
