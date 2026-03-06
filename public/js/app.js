@@ -3,34 +3,97 @@ var MEETCODE = 0;
 var USER = {};
 var ISLOGGED = false;
 
-$(document).ready(function () {
-  // If user is not logged in, redirect them to home
-  // if (window.location.href === "http://localhost:3000/room.html") {
-  //   if (!ISLOGGED) {
-  //     window.location.href = "index.html";
-  //   }
-  // }
+// 1. Define Utilities in Global Scope
+function showModal(title, message) {
+  const modal = $(".modal");
+  const modalOverlay = $(".modal-overlay");
 
-  // HOME PAGE ELEMENTS
-  const signinBtn = $("#signin-btn");
-  const profilePic = $("#user-initials");
+  $(".modal-title").text(title);
+  $(".modal-content").text(message);
+
+  modal.show();
+  modalOverlay.show();
+}
+
+// Validate Meeting Code.
+function validateCode(code) {
+  const codeToNum = parseInt(code);
+  let verified = false;
+  if (code) {
+    if (!isNaN(codeToNum) && code.length === 6) {
+      verified = true;
+    }
+  }
+  return verified;
+}
+
+function getUrlParameter(name) {
+  const params = new URLSearchParams(window.location.search);
+  return params.get(name);
+}
+
+function getURLParameter(name) {
+  const params = new URLSearchParams(window.location.search);
+  return params.get(name);
+}
+
+$(document).ready(function () {
+  // 1. Get user details on each page load.
+  const storedUser = JSON.parse(localStorage.getItem("user"));
+  if (storedUser) {
+    USER = storedUser;
+    ISLOGGED = true;
+  }
+
+  // 2. Define function to set some global UI elements.
+  function syncAuthState() {
+    const signinBtn = $("#signin-btn");
+    const profilePic = $("#profile-pic");
+
+    if (ISLOGGED) {
+      signinBtn.text("Sign Out").attr("href", "#").attr("id", "signout-btn");
+      profilePic.text(getUserInitials()).show();
+
+      if (window.location.pathname.includes("room.html")) {
+        const navMeetCode = $("#nav-meet-code");
+        const idFromURL = getURLParameter("meetID");
+        if (idFromURL) {
+          MEETCODE = idFromURL;
+          navMeetCode.text(MEETCODE);
+        }
+        console.log(`MEETCODE = ${MEETCODE}`);
+      }
+    } else {
+      profilePic.hide();
+      signinBtn
+        .text("Sign In")
+        .attr("href", "auth.html")
+        .attr("id", "signin-btn");
+      if (window.location.pathname.includes("room.html")) {
+        window.location.href = "index.html";
+      }
+    }
+  }
+
+  // 3. Sync state for page when it reloads as the first thing.
+  syncAuthState();
+
+  // 4. SIGN OUT LOGIC
+  $(document).on("click", "#signout-btn", function (e) {
+    e.preventDefault();
+    localStorage.removeItem("user");
+    ISLOGGED = false;
+    USER = {};
+    window.location.href = "index.html";
+  });
 
   // Get GLOBAL ELEMENTS - MODAL and MODAL OVERLAY
   const modalOverlay = $(".modal-overlay");
-  const modal = $(".modal");
-  const modalTitle = $(".modal-title");
-  const modalContent = $(".modal-content");
 
   modalOverlay.click(function () {
     modalOverlay.hide();
     modal.hide();
   });
-
-  // ROOM PAGE ELEMENTS
-  const navMeetCode = $("#nav-meet-code");
-  if (window.location.href.includes("meetID")) {
-    navMeetCode.text(MEETCODE);
-  }
 
   // AUTH PAGE ELEMENTS
   const signinTab = $("#signin-tab");
@@ -52,22 +115,13 @@ $(document).ready(function () {
     signUpContent.show();
   });
   // METHODS FOR AUTH PAGE
-  function getUser() {
-    return JSON.parse(localStorage.getItem("user")) || USER;
-  }
-
-  function signOut() {
-    localStorage.clear();
-  }
 
   function getUserInitials() {
-    const username = getUser().username;
-    if (!username) return "U";
-    const names = username.trim().split(" ");
-    if (names.length >= 2) {
-      return (names[0][0] + names[1][0]).toUpperCase();
-    }
-    return username.substring(0, 2).toUpperCase();
+    const name = USER.username || "User";
+    const parts = name.trim().split(" ");
+    return parts.length > 1
+      ? (parts[0][0] + parts[1][0]).toUpperCase()
+      : name.substring(0, 2).toUpperCase();
   }
 
   $("#signup-form, #signin-form").on("submit", function (event) {
@@ -95,24 +149,18 @@ $(document).ready(function () {
     });
   });
 
-  // METHODS FOR HOME PAGE
-  function validateCode(code) {
-    const codeToNum = parseInt(code);
-    let verified = false;
-    if (code) {
-      if (!isNaN(codeToNum) && code.length === 6) {
-        verified = true;
-      }
-    }
-    return verified;
-  }
-
   $("#signin-btn").click(function () {
     window.location.href = "auth.html";
   });
 
   $(".new-meet-btn").click(function () {
-    MEETCODE = Math.floor(Math.random() * 1000000 + 1);
+    if (!ISLOGGED) {
+      return;
+    }
+    // Generates a random number between 100,000 and 999,999
+    const min = 100000;
+    const max = 999999;
+    MEETCODE = Math.floor(Math.random() * (max - min + 1)) + min;
     window.location.href = "room.html?meetID=" + MEETCODE;
   });
 

@@ -15,6 +15,15 @@
         <script src="./js/app.js"></script>
     </head>
     <body>
+        <div class="modal-overlay"></div>
+        <div class="modal">
+            <div class="modalWrapper flex-col">
+                <h2 class="txt-md modal-title">Some heading</h2>
+                <p class="txt-nm modal-content">
+                    This is a simple modal for your understanding
+                </p>
+            </div>
+        </div>
         <nav class="flex-center">
             <div class="nav-left">
                 <a href="/" class="row-center">
@@ -23,11 +32,9 @@
                 </a>
             </div>
             <div class="nav-right flex-row">
-                <button>New Meeting</button>
-                <button>Sign In</button>
-                <div class="mid-center user-initials">
-                    <p>IR</p>
-                </div>
+                <button class="new-meet-btn">New Meeting</button>
+                <button id="signin-btn">Sign In</button>
+                <div id="profile-pic" class="mid-center user-initials"></div>
             </div>
         </nav>
         <main class="flex-row two-cols">

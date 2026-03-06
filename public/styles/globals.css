@@ -5,6 +5,7 @@
     --secondary-color: #8349e6;
     --txt-color: #f0f0f0;
     --danger: #e32817;
+    --danger-hover: #e32920;
     --txt-lg: 36px;
     --txt-md: 20px;
     --txt-nm: 16px;
@@ -42,6 +43,7 @@ main {
 
 button,
 .btn {
+    text-decoration: none;
     padding: 8px 10px;
     border-radius: 4px;
     border: 1px solid var(--primary-color);
