@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap');
 
 :root {
     --primary-bg: #0a0a0f;
@@ -25,7 +26,8 @@
     padding: 0;
     margin: 0;
     box-sizing: border-box;
-    font-family: 'DM Sans', sans-serif;
+    font-family: "Roboto", sans-serif;
+    font-optical-sizing: auto;
     color: var(--txt-color);
     border: none;
 }
@@ -110,8 +112,8 @@ input:focus {
 
 input::placeholder { color: var(--txt-muted); }
 
-.txt-lg { font-size: var(--txt-lg); font-family: 'Syne', sans-serif; font-weight: 800; line-height: 1.1; }
-.txt-md { font-size: var(--txt-md); font-family: 'Syne', sans-serif; font-weight: 700; }
+.txt-lg { font-size: var(--txt-lg); font-family: "Montserrat", sans-serif; font-weight: 800; line-height: 1.1; }
+.txt-md { font-size: var(--txt-md); font-family: "Montserrat", sans-serif; font-weight: 700; }
 .txt-nm { font-size: var(--txt-nm); }
 .txt-p  { font-size: var(--txt-p); }
 
