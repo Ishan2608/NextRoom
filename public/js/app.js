@@ -71,7 +71,7 @@ $(document).ready(function () {
 
       // Do not allow to visit auth page.
       if (window.location.pathname.includes("auth.html")) {
-        window.location.href = "index.html";
+        window.location.href = "/";
       }
 
       // If user is Logged in and on Rooms PAGE
@@ -92,7 +92,7 @@ $(document).ready(function () {
         .attr("href", "auth.html")
         .attr("id", "signin-btn");
       if (window.location.pathname.includes("room.html")) {
-        window.location.href = "index.html";
+        window.location.href = "/";
       }
     }
   }
@@ -106,7 +106,7 @@ $(document).ready(function () {
     localStorage.removeItem("user");
     ISLOGGED = false;
     USER = {};
-    window.location.href = "index.html";
+    window.location.href = "/";
   });
 
   $(".new-meet-btn").click(function () {
@@ -118,7 +118,7 @@ $(document).ready(function () {
     }
     // Generates a random number between 100,000 and 999,999
     const meetCode = generateMeetCode();
-    window.location.href = "room.html?meetID=" + meetCode;
+    window.location.href = "/room?meetID=" + meetCode;
   });
 
   $("#join-btn").click(function () {
@@ -127,7 +127,7 @@ $(document).ready(function () {
     if (code) {
       const verified = validateCode(code);
       if (verified) {
-        window.location.href = "room.html?meetID=" + code;
+        window.location.href = "/room?meetID=" + code;
       } else {
         const title = "Invalid Code";
         const body = "Please enter a valid 6-digit code";
@@ -140,7 +140,7 @@ $(document).ready(function () {
   });
 
   $("#signin-btn").click(function () {
-    window.location.href = "auth.html";
+    window.location.href = "/auth";
   });
 
   // AUTH PAGE ELEMENTS
@@ -181,7 +181,7 @@ $(document).ready(function () {
         USER = localStorage.getItem("user");
         ISLOGGED = true;
         console.log(`Returned user data= ${USER}`);
-        window.location.href = "index.html";
+        window.location.href = "/";
       },
       error: function (xhr) {
         console.error(`Error During Auth = ${xhr.statusText}`);
@@ -199,7 +199,7 @@ $(document).ready(function () {
   });
   $(".leave-call-btn, button#hangup-btn").on("click", function () {
     // disconnect socket and WebRTC connection...
-    window.location.href = "index.html";
+    window.location.href = "/";
   });
   $("#vid-pinned-overlay-profile").text(getUserInitials());
   $("#vid-pinned-overlay-name").text(USER.username);

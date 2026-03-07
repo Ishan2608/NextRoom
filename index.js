@@ -4,6 +4,7 @@ const { Server } = require("socket.io");
 const path = require("path");
 const cookieParser = require("cookie-parser");
 const authRouter = require("./routes/auth.routes");
+const { authMiddleware } = require("./middleware/auth.middleware");
 
 const app = express();
 const server = http.createServer(app);
@@ -14,7 +15,12 @@ const io = new Server(server, {
 // BODY PARSERS
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
 app.use(cookieParser());
+app.get("/room", authMiddleware, (req, res) => {
+  // Route: <url>/room.html?meetID=<6_digit_number>
+  res.sendFile(path.join(__dirname, "public", "room.html"));
+});
 app.use(express.static(path.join(__dirname, "public")));
 
 // ROUTES
@@ -22,16 +28,11 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-// app.get("/auth", (req, res) => {
-//   res.sendFile(path.join(__dirname, "public", "auth.html"));
-// });
-
+app.get("/auth", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "auth.html"));
+});
 app.use("/auth", authRouter);
 
-app.get("/room/:id", (req, res) => {
-  // Route: <url>/room.html?meetID=<6_digit_number>
-  res.sendFile(path.join(__dirname, "public", "room.html"));
-});
 
 app.get("/health", (req, res) => {
   res.status(200).json({
