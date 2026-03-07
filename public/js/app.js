@@ -1,10 +1,17 @@
+/*
+Each time user opens a different page, the whole JS re-loaded, thus, this file executeds 
+from 1st line to last, re-initializing the global variables. To maintain state:
+- We store important values in localStorage, which is unaffected by page reloads, thus data persists.
+- We create a method, that is run automatically on each page load, setting global variable values.
+*/
+
 // GLOBAL VARIABLES
-var MEETCODE = 0;
 var USER = {};
 var ISLOGGED = false;
+var MEETCODE = 0;
 let localStream = null;
 
-// 1. Define Utilities in Global Scope
+// -------- Utility Functions -------------
 function showModal(title, message) {
   const modal = $(".modal");
   const modalOverlay = $(".modal-overlay");
@@ -21,8 +28,7 @@ function showModal(title, message) {
   });
 }
 
-function getUserInitials() {
-  const name = USER.username || "User";
+function getUserInitials(name) {
   const parts = name.trim().split(" ");
   return parts.length > 1
     ? (parts[0][0] + parts[1][0]).toUpperCase()
@@ -52,111 +58,311 @@ function getURLParameter(name) {
   return params.get(name);
 }
 
-function syncAuthState() {
-    const signinBtn = $("#signin-btn");
-    const profilePic = $("#profile-pic");
 
-    // if user is indeed logged in
-    if (ISLOGGED) {
-      signinBtn.text("Sign Out").attr("href", "#").attr("id", "signout-btn");
-      profilePic.text(getUserInitials()).show();
-
-      // Do not allow to visit auth page.
-      if (window.location.pathname.includes("auth")) {
-        window.location.href = "/";
-      }
-
-      // If user is Logged in and on Rooms PAGE
-      if (window.location.pathname.includes("room")) {
-        // Show meeting code in Navbar
-        const navMeetCode = $("#nav-meet-code");
-        const idFromURL = getURLParameter("meetID");
-        if (idFromURL) {
-          MEETCODE = idFromURL;
-          navMeetCode.text(MEETCODE);
-        }
-        console.log(`MEETCODE = ${MEETCODE}`);
-      }
-    } else {
-      profilePic.hide();
-      signinBtn
-        .text("Sign In")
-        .attr("href", "auth.html")
-        .attr("id", "signin-btn");
-      if (window.location.pathname.includes("room")) {
-        window.location.href = "/";
-      }
-    }
-  }
-
-
-async function startLocalStream(){
-  try{
-    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-    const pinnedVideo = $("#vid-pinned-video")[0];
-    if (pinnedVideo){
-      pinnedVideo.srcObject = localStream;
-      pinnedVideo.onloadedmetadata = () => pinnedVideo.play();
-      $("#vid-pinned-overlay").hide();
-    }
-    return localStream;
-  } catch(error){
-    showModal("Something went Wrong", "Could not Load Media Device");
-    return null;
-  }
-}
-
-$(document).ready(function () {
-  // 1. Get user details on each page load.
+//  ----------------- MANAGE GLOBAL VARIABLE VALUES ----------------- 
+function syncState(){
+  // First check if we have a user stored in localStorage.
   const storedUser = JSON.parse(localStorage.getItem("user"));
+  
+  // If we do have one, define global variables
   if (storedUser) {
     USER = storedUser;
     ISLOGGED = true;
   }
 
-  // 3. Sync state for page when it reloads as the first thing.
-  syncAuthState();
+  // If user is logged In...
+  if(ISLOGGED){
+    // Convert Sign In Button to Sign Out Button.
+    $("#signin-btn").text("Sign Out").attr("href", "#").attr("id", "signout-btn");
+    // Show user profile pic with his initials.
+    $("#profile-pic").text(getUserInitials(USER.username)).show();
 
+    // If Logged In and on Auth page, redirect to home.
+    if (window.location.pathname.includes("auth")) {
+      window.location.href = "/";
+    }
+
+    // If Logged In and on Rooms Page, get meeting code.
+    if (window.location.pathname.includes("room")) {
+      // Show meeting code in Navbar
+      const navMeetCode = $("#nav-meet-code");
+      const idFromURL = getURLParameter("meetID");
+      if (idFromURL) {
+        MEETCODE = idFromURL;
+        navMeetCode.text(MEETCODE);
+      } else {
+        // If we could not get meeting code. Redirect to Home.
+        // Show The Error in Pop Up Modal
+        showModal("Missing Code", "Meeting Code Could Not be Found");
+
+        // Redirect to Home After 3 seconds.
+        setTimeout(()=>{ window.location.href = "/"; }, 3000);
+      }
+    } 
+  }
+  // Else, user is NOT logged in,
+  else {
+    // Change Sign Out Button to Sign In
+    $("#signout-btn").text("Sign In").attr("href", "/auth").attr("id", "signin-btn");
+    // Hide Profile Picture.
+    $("#profile-pic").hide()
+
+    // If Not Logged In and Vising Rooms Page, redirect to home.
+    if(window.location.pathname.includes("room")){
+      window.location.href = "/";
+    }
+  }  
+}
+
+// ----------------- Start Media Stream ----------------- 
+
+/*
+VIDEO BUTTON CLICKED
+    ├── localStream is null?
+    │       └── YES → call enableVideo()
+    ├── localStream has a live video track?  (.getVideoTracks()[0]?.readyState === "live")
+    │       └── YES → call disableVideo()
+    └── localStream exists but no live video track?
+            └── call enableVideo()
+
+MIC BUTTON CLICKED
+    ├── localStream is null?
+    │       └── YES → call enableAudio()
+    ├── localStream has NO audio track?  (.getAudioTracks().length === 0)
+    │       └── YES → call enableAudio()
+    └── localStream HAS an audio track?
+            └── call toggleMute()
+*/
+
+
+async function enableVideo() {
+    try {
+        // 1. Request ONLY video from the browser (audio: false).
+        //    Store it in a temporary variable, NOT directly in localStream.
+        //    This is because localStream may already exist with an audio track inside it.
+        const tempStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+
+        // 2. Extract the video track from the temporary stream.
+        const videoTrack = tempStream.getVideoTracks()[0];
+
+        // 3. Check if localStream already exists (an audio-only stream may already be running).
+        //    IF localStream exists  → insert the new video track into the existing stream.
+        //    IF localStream is null → this is the very first media action, assign directly.
+        if (localStream) {
+            localStream.addTrack(videoTrack); // FIX: was addTrack() with no argument
+        } else {
+            localStream = tempStream;
+        }
+
+        // 4. Point the video element at localStream.
+        //    srcObject must be set to null first to force the browser to re-read the stream.
+        //    Without this, the browser may not detect the newly added track.
+        const videoElement = document.getElementById("vid-pinned-video");
+        videoElement.srcObject = null; // FIX: was missing — browser needs this nudge
+        videoElement.srcObject = localStream;
+        videoElement.play();
+
+        // 5. Hide the overlay and mark the video button as active.
+        $("#vid-pinned-overlay").fadeOut();
+        $("#video-btn").addClass("active");
+
+    } catch (error) {
+        // getUserMedia can fail if the user denies permission or no camera is found.
+        console.error("enableVideo failed:", error);
+        showModal("Camera Error", "Could not access camera. Please check your permissions.");
+    }
+}
+
+function disableVideo() {
+    // Guard: if no stream exists at all, there is nothing to disable.
+    if (!localStream) {
+        showModal("Camera Error", "No active stream found.");
+        return;
+    }
+
+    // 1. Get the current video track from the stream.
+    const videoTrack = localStream.getVideoTracks()[0];
+
+    // 2. Guard: if no video track exists, or it is already dead, return early.
+    if (!videoTrack || videoTrack.readyState !== "live") {
+        showModal("Camera Error", "Video is already disabled.");
+        return;
+    }
+
+    // 3. Kill the hardware. Camera LED turns off immediately.
+    //    After this call, videoTrack.readyState becomes "ended" permanently.
+    videoTrack.stop();
+
+    // 4. Remove the dead track from the stream.
+    //    A stopped track cannot be restarted — keeping it causes problems.
+    localStream.removeTrack(videoTrack);
+
+    // 5. Show the overlay and mark the video button as inactive.
+    $("#vid-pinned-overlay").fadeIn(); // FIX: was $("vid-pinned-overlay") — missing #
+    $("#video-btn").removeClass("active");
+}
+
+async function enableAudio() {
+    try {
+        // 1. Request ONLY audio from the browser (video: false).
+        //    Store it temporarily — localStream may already exist with a video track.
+        const tempStream = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
+
+        // 2. Extract the audio track from the temporary stream.
+        //    A freshly created track from getUserMedia is always enabled by default.
+        //    Setting .enabled = true explicitly is redundant and unnecessary.
+        const audioTrack = tempStream.getAudioTracks()[0];
+
+        // 3. Check if localStream already exists (a video-only stream may already be running).
+        //    IF localStream exists  → insert the audio track into the existing stream.
+        //    IF localStream is null → this is the very first media action, assign directly.
+        if (localStream) {
+            localStream.addTrack(audioTrack);
+        } else {
+            localStream = tempStream;
+        }
+
+        // 4. Mark the mic button as active.
+        $("#mic-btn").addClass("active");
+
+    } catch (error) {
+        // getUserMedia can fail if the user denies permission or no microphone is found.
+        console.error("enableAudio failed:", error);
+        showModal("Microphone Error", "Could not access microphone. Please check your permissions.");
+    }
+}
+
+function disableAudio() {
+    // Guard: if no stream exists at all, there is nothing to disable.
+    if (!localStream) {
+        showModal("Microphone Error", "No active stream found.");
+        return;
+    }
+
+    // 1. Get the current audio track from the stream.
+    const audioTrack = localStream.getAudioTracks()[0];
+
+    // 2. Guard: if no audio track exists, or it is already dead, return early.
+    //    FIX: was readyState === "live" which is inverted — that would return early
+    //    when the track IS live, which is the opposite of what we want.
+    if (!audioTrack || audioTrack.readyState !== "live") {
+        showModal("Microphone Error", "Microphone is already disabled.");
+        return;
+    }
+
+    // 3. Kill the hardware. Microphone turns off immediately.
+    //    After this call, audioTrack.readyState becomes "ended" permanently.
+    audioTrack.stop();
+
+    // 4. Remove the dead track from the stream.
+    //    A stopped track cannot be restarted — keeping it causes problems.
+    localStream.removeTrack(audioTrack);
+
+    // 5. Mark the mic button as inactive.
+    $("#mic-btn").removeClass("active");
+}
+
+
+// When Page is Loaded and JS is ready to run.
+$(document).ready(function () {
+  
+  // First, sync state, regardless of Page.
+  syncState();
+
+  // -----------------------------------------------------------------
+  // HOME PAGE
+  // -----------------------------------------------------------------
+
+  /*
+    ================ What Happens When User Clicks on "New Meeting" Button(s) ================
+    There are two "New Meet Buttons", click on each of them should starte a new meet.
+    First check if user is logged in, if not, show error. If yes, generate new code.
+    Then, redirect to new room.html. Since meet code is adding as query param in URL,
+    the MEETCODE is set when room.html is loaded, by reading query parameter.
+  */
   $(".new-meet-btn").click(function () {
     if (!ISLOGGED) {
       const title = "Un-Authorized Activity";
       const body = "You need to be loggedin in to start a new meeting";
       showModal(title, body);
       return;
+    } else {
+      // Generates a random number between 100,000 and 999,999
+      const meetCode = generateMeetCode();
+      window.location.href = "/room?meetID=" + meetCode;
     }
-    // Generates a random number between 100,000 and 999,999
-    const meetCode = generateMeetCode();
-    window.location.href = "/room?meetID=" + meetCode;
   });
 
+  /* 
+    ================ What happens when user clicks on "Join" Button ================
+    If user has custom code to input, first validate the input code to be a 6 digit number.
+    Once validated, redirect to room.html, setting this code in query parameter.
+  */
   $("#join-btn").click(function () {
+    // Get input tag in which code is written.
     const codeElement = $("#code-input");
+    // Get the text written in the element by user.
     const code = codeElement.val();
+
+    // If something is written.
     if (code) {
+      // Validate Code using the utility function defined above.
       const verified = validateCode(code);
+
+      // If validated, redirect to room.html.
       if (verified) {
         window.location.href = "/room?meetID=" + code;
       } else {
+        // If not validated, show error in Modal.
         const title = "Invalid Code";
         const body = "Please enter a valid 6-digit code";
         showModal(title, body);
+        return;
       }
     } else {
+      // If nothing was written, highlight input tag.
       codeElement.focus();
       codeElement.css("border", "2px solid var(--danger");
     }
   });
 
+  /*
+    ================ What Happens When User clicks on Sign In Button ================
+    Just Redirect to auth.html Page.
+  */
   $("#signin-btn").click(function () {
     window.location.href = "/auth";
   });
+
+  /*
+    ================ What Happens When User clicks on Sign Out Button ================
+    Remove user details from localStorage. Reset global variables.
+  */
+  $("#signout-btn").click(function () {
+    localStorage.removeItem("user");
+    ISLOGGED = false;
+    USER = {};
+    window.location.href = "/";
+  });
+
+
+  // -----------------------------------------------------------------
+  // Auth PAGE
+  // -----------------------------------------------------------------
   
-  // AUTH PAGE ELEMENTS
+  /*
+    The Sign In and Sign Up Forms are contained within same div.
+    Toggle between them using the Tab Buttons.
+  */
+
+  // Select Tab Buttons
   const signinTab = $("#signin-tab");
   const signupTab = $("#signup-tab");
+  // Select The Container corresponding to tab buttons.
   const signInContent = $("#signin-tab-content");
   const signUpContent = $("#signup-tab-content");
 
+  // When Sign In Tab is clicked, show its content, hide other's.
   signinTab.click(function () {
     signinTab.addClass("active");
     signupTab.removeClass("active");
@@ -164,6 +370,7 @@ $(document).ready(function () {
     signInContent.show();
   });
 
+  // When Sign Up Tab is clicked, show its content, hide other's.
   signupTab.click(function () {
     signinTab.removeClass("active");
     signupTab.addClass("active");
@@ -171,131 +378,127 @@ $(document).ready(function () {
     signUpContent.show();
   });
 
-  // HANDLE AUTH FORM SUBMISSION
+  /*
+    ================ HANDLING FORM SUBMISSIONS ================
+    Both Forms are in their separate <form></form> tags. But, behavious is similar.
+  */
   $("#signup-form, #signin-form").on("submit", function (event) {
-    event.preventDefault();
-    const formId = $(this).attr("id");
-    const apiEndPoint =
-      formId === "signup-form" ? "/auth/signup" : "/auth/signin";
 
+    // Do not allow the form to be submitted when Submit Button is clicked.
+    event.preventDefault();
+
+    // Get Form Id
+    const formId = $(this).attr("id");
+
+    // Based on Id, decide whether is is "Sign Up" or "Sign In"
+    const apiEndPoint = (formId === "signup-form") ? "/auth/signup" : "/auth/signin";
+
+    // Use FormData class to convert form's data into JSON Format.
     const formData = Object.fromEntries(new FormData(this));
+
+    // Send Request to Backend.
     $.ajax({
       url: apiEndPoint,
       type: "POST",
       contentType: "application/json",
       data: JSON.stringify(formData),
+
+      /* 
+        What to do when server sends a response.
+        This is what Server sends: { success: true, message: "Login Successfull", user: payload }
+        - payload is an object = {id, username, email}
+      */
       success: function (res) {
-        localStorage.setItem("user", JSON.stringify(res.user));
-        USER = localStorage.getItem("user");
-        ISLOGGED = true;
-        console.log(`Returned user data= ${USER}`);
-        window.location.href = "/";
+        // If server response success.
+        if (res.success){
+          // Store returned user in localStorage.
+          localStorage.setItem("user", JSON.stringify(res.user));
+
+          // Set Global Variables.
+          USER = res.user;
+          ISLOGGED = true;
+          // console.log(`Returned user data= ${USER}`);
+
+          // Redirect to Home Page.
+          window.location.href = "/";
+        }
       },
       error: function (xhr) {
         console.error(`Error During Auth = ${xhr.statusText}`);
+        return showModal("Error", `${xhr.statusText}`);
       },
     });
   });
 
-  $(document).on("click", "#signout-btn", function (e) {
-    e.preventDefault();
-    localStorage.removeItem("user");
-    ISLOGGED = false;
-    USER = {};
-    window.location.href = "/";
-  });
 
-  // ROOMS ELEMENTS
+  // -----------------------------------------------------------------
+  // ROOM PAGE
+  // -----------------------------------------------------------------
+
+  // When User Clicks on Share Link Button.
   $(".share-link-btn").on("click", function () {
+    // Since we are on room.html, syncState already set MEETCODE.
+    // Just Write that to ClipBoard.
     navigator.clipboard.writeText(MEETCODE).then(() => {
       const title = "Meeting Link Copied";
       const body = `Meeting Link = ${MEETCODE} has been copied to Clipboard`;
+      // Show the Message through Modal.
       showModal(title, body);
     });
   });
+
+  // There are two Leav Call Buttons. When User clicks on either of them,
   $(".leave-call-btn, button#hangup-btn").on("click", function () {
     // disconnect socket and WebRTC connection...
+    
+    // Stop all active tracks before leaving to release hardware.
+    if (localStream) {
+      localStream.getTracks().forEach(track => track.stop());
+      localStream = null;
+    }
+    // Reset MEETCODE  and redirec to Home.
+    MEETCODE = 0;
     window.location.href = "/";
   });
-  $("#vid-pinned-overlay-profile").text(getUserInitials());
+
+  // Initiate Pinned User Display Elements.
+  $("#vid-pinned-overlay-profile").text(getUserInitials(USER.username));
   $("#vid-pinned-overlay-name").text(USER.username);
 
-  // $(".control-btn").on("click", function () {
-  //     const btnID = $(this).attr("id");
-  //     if (btnID === "hangup-btn" || btnID === "menu-btn" || btnID === "share-link-btn") return;
-  //     $(this).toggleClass("active");
-  // });
+  $("#video-btn").on("click", async function() {
+    // If no stream exists at all, this is the first time — enable video.
+    if (!localStream) {
+      await enableVideo();
+      return;
+    }
 
-  $("#video-btn").on("click", async function () {
-  if (!localStream) {
-    // First ever click — start fresh
-    localStream = await startLocalStream();
-    if (!localStream) return;
-    $(this).addClass("active");
-    return;
-  }
+    const videoTrack = localStream.getVideoTracks()[0];
+    if (videoTrack && videoTrack.readyState === "live") {
+      // A live video track exists — user wants to turn camera off.
+      disableVideo();
+    } else {
+      // Stream exists but has no live video track — user wants to turn camera on.
+      await enableVideo();
+    }
+  });
 
-  const videoTrack = localStream.getVideoTracks()[0];
-
-  // VIDEO IS ON -> TURN IT OFF
-  if (videoTrack && videoTrack.readyState === "live") {
-    videoTrack.stop();
-    localStream.removeTrack(videoTrack);            // ✅ FIX: Remove dead track
-    $(this).removeClass("active");
-    $("#vid-pinned-overlay").fadeIn(200);
-    return;
-  }
-
-  // VIDEO IS OFF -> RESTART JUST THE VIDEO TRACK
-  try {
-    const newStream = await navigator.mediaDevices.getUserMedia({ video: true });
-    const newVideoTrack = newStream.getVideoTracks()[0];
-    localStream.addTrack(newVideoTrack);
-
-    const pinnedVideo = $("#vid-pinned-video")[0];
-    pinnedVideo.srcObject = null;                   // ✅ FIX: Force browser to re-read stream
-    pinnedVideo.srcObject = localStream;
-    pinnedVideo.play();
-
-    $(this).addClass("active");
-    $("#vid-pinned-overlay").fadeOut(200);
-  } catch (error) {
-    showModal("Camera Error", "Could not restart the camera hardware.");
-  }
-});
-
+  // ================ MIC BUTTON ================
   $("#mic-btn").on("click", async function () {
-  // First ever mic click — request ONLY audio
-  if (!localStream) {
-    try {
-      localStream = await navigator.mediaDevices.getUserMedia({ video: false, audio: true }); // ✅ audio only
-    } catch (error) {
-      showModal("Mic Error", "Could not access microphone.");
+    // If no stream exists at all, this is the first time — enable audio.
+    if (!localStream) {
+      await enableAudio();
       return;
     }
-    $(this).addClass("active");
-    return;
-  }
 
-  let audioTrack = localStream.getAudioTracks()[0];
+    const audioTrack = localStream.getAudioTracks()[0];
 
-  // No audio track yet (user started stream via video btn) — add one now
-  if (!audioTrack) {
-    try {
-      const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      audioTrack = audioStream.getAudioTracks()[0];
-      localStream.addTrack(audioTrack);             // ✅ FIX: Add mic to existing stream
-    } catch (error) {
-      showModal("Mic Error", "Could not access microphone.");
-      return;
+    if (audioTrack && audioTrack.readyState === "live") {
+      // A live audio track exists — user wants to turn mic off.
+      disableAudio();
+    } else {
+      // Stream exists but has no live audio track — user wants to turn mic on.
+      await enableAudio();
     }
-    $(this).addClass("active");
-    return;
-  }
-
-  // Audio track exists — just toggle it
-  audioTrack.enabled = !audioTrack.enabled;
-  $(this).toggleClass("active", audioTrack.enabled);
-});
+  });
   
 });
