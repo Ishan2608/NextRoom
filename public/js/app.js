@@ -5,6 +5,9 @@ from 1st line to last, re-initializing the global variables. To maintain state:
 - We create a method, that is run automatically on each page load, setting global variable values.
 */
 
+// import {setLocalStream, setMeetCode, joinRoom, sendChatMessage, addTrackToPeer, addTrackFromPeer, setLocalStream} from './webRTC.js';
+import {setLocalStream, setMeetCode, joinRoom} from './webRTC.js';
+
 // GLOBAL VARIABLES
 var USER = {};
 var ISLOGGED = false;
@@ -28,7 +31,7 @@ function showModal(title, message) {
   });
 }
 
-function getUserInitials(name) {
+function getUserInitials(name) {  
   const parts = name.trim().split(" ");
   return parts.length > 1
     ? (parts[0][0] + parts[1][0]).toUpperCase()
@@ -153,6 +156,9 @@ async function enableVideo() {
         } else {
             localStream = tempStream;
         }
+        
+        // Set LocalStream variable in webRTC.js
+        setLocalStream(localStream);
 
         // 4. Point the video element at localStream.
         //    srcObject must be set to null first to force the browser to re-read the stream.
@@ -221,7 +227,8 @@ async function enableAudio() {
         } else {
             localStream = tempStream;
         }
-
+        // Set LocalStream variable in webRTC.js
+        setLocalStream(localStream);
         // 4. Mark the mic button as active.
         $("#mic-btn").addClass("active");
 
@@ -261,9 +268,6 @@ function disableAudio() {
     // 5. Mark the mic button as inactive.
     $("#mic-btn").removeClass("active");
 }
-
-// import {joinRoom, sendChatMessage, addTrackToPeer, addTrackFromPeer, setLocalStream} from './webRTC.js';
-import {joinRoom} from './webRTC.js';
 
 // When Page is Loaded and JS is ready to run.
 $(document).ready(function () {
@@ -439,7 +443,8 @@ $(document).ready(function () {
   // -----------------------------------------------------------------
 
   if (window.location.pathname.includes('room')){
-    joinRoom(MEETCODE, USER.id, USER.username, USER.email);
+    joinRoom(USER.id, USER.username, USER.email);
+    setMeetCode(MEETCODE);
   }
 
   // When User Clicks on Share Link Button.
@@ -465,6 +470,8 @@ $(document).ready(function () {
     }
     // Reset MEETCODE  and redirec to Home.
     MEETCODE = 0;
+    setMeetCode(MEETCODE);
+    
     window.location.href = "/";
   });
 

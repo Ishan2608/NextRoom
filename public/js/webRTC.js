@@ -37,9 +37,46 @@ var currentMeetCode = null;
 var pc;
 var localStream = null;
 var remoteMediaStream = null;
+var users = new Map();
 
 const iceConfig = {
   iceServers: [ {urls: 'stun:stun.l.google.com:19302'} ]
+}
+
+function setLocalStream(stream){
+  localStream = stream;
+}
+
+function setMeetCode(code){
+  currentMeetCode = code;
+}
+
+function getUserInitials(name) {
+  const parts = name.trim().split(" ");
+  return parts.length > 1
+    ? (parts[0][0] + parts[1][0]).toUpperCase()
+    : name.substring(0, 2).toUpperCase();
+}
+
+function addParticipantToUI(user){
+  // Ensure we don't add the same user twice (safety check)
+  if ($(`#p-${user.socketId}`).length > 0) return;
+  
+  const ins = getUserInitials(user.username);
+  const participant = `
+    <div class="participant" id="p-${user.socketId}">
+        <video autoplay muted playsinline id="${user.socketId}"></video>
+        <div class="participant-overlay">
+            <div class="participant-profile">${ins}</div>
+            <div class="participant-name">${user.username}</div>
+        </div>
+    </div>
+  `;
+  $("#vid-others").append(participant);
+}
+
+function removeParticipantFromUI(socketId) {
+  $(`#p-${socketId}`).remove();
 }
 
 // ============================================================
@@ -48,23 +85,43 @@ const iceConfig = {
 
 // TODO: Write and export a function: joinRoom(meetCode, userId)
 // This is called from app.js when the room page loads.
-function joinRoom(meetCode, userId, username, email){
-  currentMeetCode = meetCode;
-  socket.emit("join-room", {meetCode, userId, username, email});
+function joinRoom(userId, username, email){
+  users.set(socket.id, {userId: userId, username: username, email: email, socketId: socket.id});
+
+  $("#vid-pinned-overlay-profile").text(getUserInitials(username));
+  $("#vid-pinned-overlay-name").text(username);
+  
+  socket.emit("join-room", {currentMeetCode, userId, username, email});
   console.log(`SOCKET:EMIT:JOIN-ROOM | user=${username} (id=${userId}) joining room=${meetCode}`);
 }
 
 // TODO: Listen for "user-joined" event from the server.
 // This fires when someone else enters the same room.
 socket.on("user-joined", ({ userId, username, email, socketId })=>{
-  console.log(`SOCKET:ON:USER-JOINED | user=${username} (id=${userId}) socketId=${socketId}`);
+  console.log(`SOCKET:ON:USER-JOINED | New user=${username} (id=${userId}) with socketId=${socketId} joined`);
+  users.set(socketId, {userId, username, email, socketId});
+  const userData = {userId: userId, username: username, email: email, socketId: socketId};
+  addParticipantToUI(userData);
   // createOffer();
 });
 
 // TODO: Listen for "user-left" event from the server.
 socket.on("user-left", ({ userId, username, email, socketId})=>{
   console.log(`SOCKET:ON:USER-LEFT | user=${username} (id=${userId}) socketId=${socketId}`);
+  users.delete(socketId);
+  $(`#p-${socketId}`).remove();
   // handleUserLeft();
+});
+
+// TODO: Get list of participants already joined in the room:
+socket.on("get-others", (others) => {
+  // others = [{userId: , username: , email: , socketId: }, ...]
+  console.log(`SOCKET:ON:GET-OTHERS: List of other participants is...`);
+  console.log(others);
+  for (const other of others){
+    users.set(other.socketId, other);
+    addParticipantToUI(other);
+  }
 });
 
 // ============================================================
@@ -73,40 +130,16 @@ socket.on("user-left", ({ userId, username, email, socketId})=>{
 
 // TODO: Write a function: createPeerConnection(localStream)
 // This is called before creating an offer or answer.
-// Inside:
-//
-//   Create a new RTCPeerConnection using iceConfig.
-//   Store it in the global peerConnection variable.
-//
-//   Add all local tracks to the peer connection.
-//   Hint: localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream))
-//   This is what sends YOUR video/audio to the remote user.
-//
-//   Set peerConnection.onicecandidate:
-//     When fired, check that event.candidate is not null.
-//     If valid, emit "ice-candidate" to the server.
-//     Pass: { candidate: event.candidate, meetCode: MEETCODE }
-//     console.log("ICE candidate found:", event.candidate)
-//
-//   Set peerConnection.ontrack:
-//     When fired, event.streams[0] is the remote user's live MediaStream.
-//     Store it in the remoteStream global variable.
-//     Call displayRemoteStream(event.streams[0]) — defined in Section 6.
-//     console.log("Remote track received")
-//
-//   Set peerConnection.onconnectionstatechange:
-//     Log peerConnection.connectionState so you can see: 
-//     "connecting" → "connected" → "disconnected" etc.
-
-// This is called before creating an offer or answer.
 function createPeerConnection(localStream){
   pc = new RTCPeerConnection(iceConfig);
+
+  // This is what sends YOUR video/audio to the remote user.
   localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
 
   pc.onicecandidate = (event)=>{
     if(event.candidate) {
-      socket.emit("ice-candidate", { candidate: event.candidate, meetCode: MEETCODE });
-      console.log(`SOCKET-EVENT:EMIT:ICE-CANDIDATE: `);
+      socket.emit("ice-candidate", { candidate: event.candidate, meetCode: currentMeetCode });
+      console.log(`SOCKET-EVENT:EMIT:ICE-CANDIDATE: For meet = ${currentMeetCode}`);
     }
   };
   // When fired, event.streams[0] is the remote user's live MediaStream.
@@ -245,5 +278,5 @@ function createPeerConnection(localStream){
 // ============================================================
 
 // TODO: Export everything that app.js needs to call directly:
-export {joinRoom, createPeerConnection};
+export {setLocalStream, setMeetCode, joinRoom, createPeerConnection};
 // export {joinRoom, sendChatMessage, addTrackToPeer, removeTrackFromPeer, setLocalStream};

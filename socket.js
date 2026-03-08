@@ -56,11 +56,22 @@ function initSocket(io) {
         socket.join(meetCode); // this puts the socket into a named room.
 
         if (!rooms.has(meetCode)){
+            // If this is the first user in Room, create a new room.
             rooms.set(meetCode, new Map());
         }
 
-        // Register this user in the inner Map, keyed by socketId.
-        rooms.get(meetCode).set(socket.id, {userId: userId, username: username, email: email, socketId: socket.id});
+        // Register this user in the inner Map.
+        const room = rooms.get(meetCode);
+        room.set(socket.id, {userId: userId, username: username, email: email, socketId: socket.id});
+
+        const participants = Array.from(room.values()); // Get list of all participants of this room
+        const thisUserID = socket.id; // Stored ID of this user, joining in separately.
+        // Get list of all users except this one.
+        const others = participants.filter((user) => user.socketId !== thisUserID);
+        // others = [{userId: , username: , email: , socketId: }, ...]
+
+        // SEND THIS LIST OF OTHER PARTICIPANTS TO THIS USER to update his UI.
+        socket.emit("get-others", others);
 
         console.log(`SOCKET:ON:JOIN-ROOM | user=${username} (id=${userId}) joined room=${meetCode}`);
         console.log(`SOCKET:ON:JOIN-ROOM | current users in room=${meetCode}:`, getUsersInRoom(meetCode));
@@ -85,8 +96,6 @@ function initSocket(io) {
                 console.log(`Room became empty, removing it from directory.`);
             }
         }
-        // Leave the room.
-        socket.leave(meetCode);
 
         // Notify Other users:
         socket.to(meetCode).emit("user-left", {
@@ -95,6 +104,9 @@ function initSocket(io) {
             email: user?.email,
             socketId: socket.id
         });
+
+        // Leave the room.
+        socket.leave(meetCode);
       });
 
       socket.on("send-message", ({meetCode, message})=>{
