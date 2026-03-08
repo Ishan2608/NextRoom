@@ -60,15 +60,15 @@ function getUserInitials(name) {
 
 function addParticipantToUI(user){
   // Ensure we don't add the same user twice (safety check)
-  if ($(`#p-${user.socketId}`).length > 0) return;
+  if ($(`#p-container-${user.socketId}`).length > 0) return;
   
   const ins = getUserInitials(user.username);
   const participant = `
-    <div class="participant" id="p-${user.socketId}">
-        <video autoplay muted playsinline id="${user.socketId}"></video>
-        <div class="participant-overlay">
-            <div class="participant-profile">${ins}</div>
-            <div class="participant-name">${user.username}</div>
+    <div class="participant" id="p-container-${user.socketId}">
+        <video autoplay muted playsinline id="p-video-${user.socketId}"></video>
+        <div id="p-overlay-${user.userId}" class="participant-overlay">
+            <div id="p-profile-${user.socketId}" class="participant-profile">${ins}</div>
+            <div id="p-name-${user.socketId}" class="participant-name">${user.username}</div>
         </div>
     </div>
   `;
