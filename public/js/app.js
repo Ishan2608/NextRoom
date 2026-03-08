@@ -9,7 +9,7 @@ from 1st line to last, re-initializing the global variables. To maintain state:
 var USER = {};
 var ISLOGGED = false;
 var MEETCODE = 0;
-let localStream = null;
+var localStream = null;
 
 // -------- Utility Functions -------------
 function showModal(title, message) {
@@ -262,12 +262,15 @@ function disableAudio() {
     $("#mic-btn").removeClass("active");
 }
 
+// import {joinRoom, sendChatMessage, addTrackToPeer, addTrackFromPeer, setLocalStream} from './webRTC.js';
+import {joinRoom} from './webRTC.js';
 
 // When Page is Loaded and JS is ready to run.
 $(document).ready(function () {
   
   // First, sync state, regardless of Page.
   syncState();
+  window.__currentUserId = USER.id;
 
   // -----------------------------------------------------------------
   // HOME PAGE
@@ -328,7 +331,7 @@ $(document).ready(function () {
 
   /*
     ================ What Happens When User clicks on Sign In Button ================
-    Just Redirect to auth.html Page.
+    Just Redirect to auth.html Page, If he is logged in, he would see Sign Out Button instead.
   */
   $("#signin-btn").click(function () {
     window.location.href = "/auth";
@@ -434,6 +437,10 @@ $(document).ready(function () {
   // -----------------------------------------------------------------
   // ROOM PAGE
   // -----------------------------------------------------------------
+
+  if (window.location.pathname.includes('room')){
+    joinRoom(MEETCODE, USER.id, USER.username, USER.email);
+  }
 
   // When User Clicks on Share Link Button.
   $(".share-link-btn").on("click", function () {
