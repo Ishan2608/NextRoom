@@ -109,7 +109,8 @@ function initSocket(io) {
         socket.leave(meetCode);
       });
 
-      socket.on("send-message", ({meetCode, message})=>{
+      // Send chat messages from user to user.
+      socket.on("chat-message", ({meetCode, message})=>{
         
         const room = getRoom(meetCode);
         const user = room?.get(socket.id);        
@@ -120,8 +121,33 @@ function initSocket(io) {
             return;
         }
         console.log(`SOCKET-EVENT:ON:SEND-MESSAGE: user = ${user.username} sent a message to room = ${meetCode}`);
+        io.to(meetCode).emit("chat-message", { sender: user, message: message, timestamp: Date.now() });
         
+      });
+
+      socket.on("offer", ( { offer, meetCode } )=>{
+        // TODO: Look up sender from rooms Map for logging.
+        const user = getRoom(meetCode)?.get(socket.id);
+        console.log(`SOCKET-EVENT:ON:OFFER: Recieved offer from ${user.username}`);
         
+        // TODO: socket.to(meetCode).emit "offer", passing { offer }
+        socket.io(meetCode).emit("offer", { offer });
+        console.log(`SOCKET-EVENT:EMIT:OFFER: Sending offer from ${user.username} to room=${meetCode}`);
+      });
+
+      socket.on("answer", ( { answer, meetCode } )=>{
+        // TODO: Look up sender from rooms Map for logging.
+        const user = getRoom(meetCode)?.get(socket.id);
+        console.log(`SOCKET-EVENT:ON:ANSWER: Recieved answer from ${user.username}`);
+        
+        socket.io(meetCode).emit("answer", { answer });
+        console.log(`SOCKET-EVENT:EMIT:ANSWER: Sending answer from ${user.username} to room=${meetCode}`);
+      });
+
+    
+      socket.on("ice-candidate", ( { candidate, meetCode } )=>{
+        // console.log(`SOCKET-EVENT:ON:ICE-CANDIDATE: Recieved ICE-Candidate.`);
+        socket.to(meetCode).emit("ice-candidate", { candidate });
       });
 
       socket.on("disconnect", ()=> {
