@@ -282,7 +282,7 @@ function displayChatMessage(data){
 
   chatCont.append(msgHTML);
   // Auto-scroll to the bottom of the chat
-  chatContainer.scrollTop(chatContainer[0].scrollHeight);
+  chatCont.scrollTop(chatContainer[0].scrollHeight);
 }
 
 // Make it accessible to webRTC.js
@@ -495,9 +495,10 @@ $(document).ready(function () {
   });
 
   const sendBtn = $("#chat-input-container button");
+  const chatInput = $("#chat-input-container input");
   
   sendBtn.on("click", ()=>{
-      const chatInput = $("#chat-input-container input");
+      chatInput = $("#chat-input-container input");
       const msg = chatInput.val();
       if (!msg.trim()) return chatInput.focus();
 
