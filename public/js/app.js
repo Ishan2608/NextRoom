@@ -6,7 +6,7 @@ from 1st line to last, re-initializing the global variables. To maintain state:
 */
 
 // import {setLocalStream, setMeetCode, joinRoom, sendChatMessage, addTrackToPeer, addTrackFromPeer, setLocalStream} from './webRTC.js';
-import {setLocalStream, setMeetCode, joinRoom} from './webRTC.js';
+import {setLocalStream, setMeetCode, joinRoom, sendChatMessage} from './webRTC.js';
 
 // GLOBAL VARIABLES
 var USER = {};
@@ -269,6 +269,25 @@ function disableAudio() {
     $("#mic-btn").removeClass("active");
 }
 
+function displayChatMessage(data){
+  const chatCont = $("#chat-interface-body");
+  const isMe = data.sender.userId === USER.id;
+  const bubbleClass = isMe ? "sent-by-me": "sent-by-other";
+
+  const msgHTML = `
+    <div class="msg-bubble ${bubbleClass}">
+        <p><strong>${isMe ? "You" : data.sender.username}:</strong> ${data.message}</p>
+    </div>
+  `;
+
+  chatCont.append(msgHTML);
+  // Auto-scroll to the bottom of the chat
+  chatContainer.scrollTop(chatContainer[0].scrollHeight);
+}
+
+// Make it accessible to webRTC.js
+window.displayChatMessage = displayChatMessage;
+
 // When Page is Loaded and JS is ready to run.
 $(document).ready(function () {
   
@@ -474,6 +493,19 @@ $(document).ready(function () {
     
     window.location.href = "/";
   });
+
+  const sendBtn = $("#chat-input-container button");
+  
+  sendBtn.on("click", ()=>{
+      const chatInput = $("#chat-input-container input");
+      const msg = chatInput.val();
+      if (!msg.trim()) return chatInput.focus();
+
+      sendChatMessage(MEETCODE, USER.id, msg);
+      chatInput.val("")
+  });
+
+  chatInput.on("keypress", (e) => { if (e.which === 13) sendBtn.click(); });
 
   // Initiate Pinned User Display Elements.
   $("#vid-pinned-overlay-profile").text(getUserInitials(USER.username));

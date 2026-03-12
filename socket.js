@@ -110,20 +110,19 @@ function initSocket(io) {
       });
 
       // Send chat messages from user to user.
-      socket.on("chat-message", ({meetCode, message})=>{
-        
-        const room = getRoom(meetCode);
-        const user = room?.get(socket.id);        
+        socket.on("chat-message", ({ meetCode, message, userId, timestamp }) => {
+            const room = getRoom(meetCode);
+            const user = room?.get(socket.id);        
 
-        // Send message to room.
-        if(!user){
-            console.warn(`Message sent by unknown user`);
-            return;
-        }
-        console.log(`SOCKET-EVENT:ON:SEND-MESSAGE: user = ${user.username} sent a message to room = ${meetCode}`);
-        io.to(meetCode).emit("chat-message", { sender: user, message: message, timestamp: Date.now() });
-        
-      });
+            if (!user) return;
+            
+            // Broadcast to everyone in the room
+            io.to(meetCode).emit("chat-message", { 
+                sender: user, 
+                message: message, 
+                timestamp: timestamp || Date.now() 
+            });
+        });
 
       socket.on("offer", ( { offer, meetCode } )=>{
         // TODO: Look up sender from rooms Map for logging.
@@ -131,7 +130,7 @@ function initSocket(io) {
         console.log(`SOCKET-EVENT:ON:OFFER: Recieved offer from ${user.username}`);
         
         // TODO: socket.to(meetCode).emit "offer", passing { offer }
-        socket.io(meetCode).emit("offer", { offer });
+        socket.to(meetCode).emit("offer", { offer });
         console.log(`SOCKET-EVENT:EMIT:OFFER: Sending offer from ${user.username} to room=${meetCode}`);
       });
 
@@ -140,7 +139,7 @@ function initSocket(io) {
         const user = getRoom(meetCode)?.get(socket.id);
         console.log(`SOCKET-EVENT:ON:ANSWER: Recieved answer from ${user.username}`);
         
-        socket.io(meetCode).emit("answer", { answer });
+        socket.to(meetCode).emit("answer", { answer });
         console.log(`SOCKET-EVENT:EMIT:ANSWER: Sending answer from ${user.username} to room=${meetCode}`);
       });
 

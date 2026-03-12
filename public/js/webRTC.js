@@ -79,6 +79,8 @@ function removeParticipantFromUI(socketId) {
   $(`#p-container-${socketId}`).remove();
 }
 
+
+
 // ============================================================
 // SECTION 3: JOIN ROOM
 // ============================================================
@@ -245,15 +247,16 @@ function createPeerConnection(localStream){
 // SECTION 8: CHAT MESSAGES
 // ============================================================
 
-// TODO: Write and export a function: sendChatMessage(meetCode, userId, message)
-// Inside:
-//   Emit "chat-message" to the server.
-//   Pass: { meetCode, userId, message, timestamp: Date.now() }
+function sendChatMessage(meetCode, userId, message){
+  if (!message.trim()) return;
+  socket.emit("chat-message", {meetCode, userId, message, timestamp: Date.now()});
+  console.log(`SOCKET:EMIT:CHAT-MESSAGE: ${userId} sends message: ${message}`);
+}
 
-// TODO: Listen for "chat-message" event from the server.
-// Inside:
-//   Call displayChatMessage(data) — defined in app.js or here.
-//   This will append the message to #chat-interface-body.
+socket.on("chat-message", (data)=>{
+  console.log(`SOCKET:ON:CHAT-MESSAGE: Reading sent message ...`);
+  displayChatMessage(data);
+});
 
 
 // ============================================================
@@ -281,5 +284,5 @@ function createPeerConnection(localStream){
 // ============================================================
 
 // TODO: Export everything that app.js needs to call directly:
-export {setLocalStream, setMeetCode, joinRoom, createPeerConnection};
+export {setLocalStream, setMeetCode, joinRoom, createPeerConnection, sendChatMessage};
 // export {joinRoom, sendChatMessage, addTrackToPeer, removeTrackFromPeer, setLocalStream};
