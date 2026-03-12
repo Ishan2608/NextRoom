@@ -76,7 +76,7 @@ function addParticipantToUI(user){
 }
 
 function removeParticipantFromUI(socketId) {
-  $(`#p-${socketId}`).remove();
+  $(`#p-container-${socketId}`).remove();
 }
 
 // ============================================================
@@ -85,13 +85,13 @@ function removeParticipantFromUI(socketId) {
 
 // TODO: Write and export a function: joinRoom(meetCode, userId)
 // This is called from app.js when the room page loads.
-function joinRoom(userId, username, email){
+function joinRoom(meetCode, userId, username, email){
   users.set(socket.id, {userId: userId, username: username, email: email, socketId: socket.id});
 
   $("#vid-pinned-overlay-profile").text(getUserInitials(username));
   $("#vid-pinned-overlay-name").text(username);
   
-  socket.emit("join-room", {currentMeetCode, userId, username, email});
+  socket.emit("join-room", {meetCode, userId, username, email});
   console.log(`SOCKET:EMIT:JOIN-ROOM | user=${username} (id=${userId}) joining room=${meetCode}`);
 }
 
@@ -109,13 +109,17 @@ socket.on("user-joined", ({ userId, username, email, socketId })=>{
 socket.on("user-left", ({ userId, username, email, socketId})=>{
   console.log(`SOCKET:ON:USER-LEFT | user=${username} (id=${userId}) socketId=${socketId}`);
   users.delete(socketId);
-  $(`#p-${socketId}`).remove();
+  removeParticipantFromUI(socketId);
   // handleUserLeft();
 });
 
 // TODO: Get list of participants already joined in the room:
 socket.on("get-others", (others) => {
   // others = [{userId: , username: , email: , socketId: }, ...]
+  // Empty out the old list (before page reload if any, to get a fresh list.)
+  users.clear();
+  // 2. IMPORTANT: Clear the UI container to prevent duplicates on reload
+  $("#vid-others").empty();
   console.log(`SOCKET:ON:GET-OTHERS: List of other participants is...`);
   console.log(others);
   for (const other of others){
@@ -160,7 +164,6 @@ function createPeerConnection(localStream){
 // ============================================================
 
 // Called by the user already in the room when a new user joins.
-
 // TODO: Write a function: createOffer(localStream)
 // Called by the user who was already in the room when a new user joins.
 // Inside:

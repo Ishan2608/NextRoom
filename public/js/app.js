@@ -443,8 +443,8 @@ $(document).ready(function () {
   // -----------------------------------------------------------------
 
   if (window.location.pathname.includes('room')){
-    joinRoom(USER.id, USER.username, USER.email);
     setMeetCode(MEETCODE);
+    joinRoom(MEETCODE, USER.id, USER.username, USER.email);
   }
 
   // When User Clicks on Share Link Button.
