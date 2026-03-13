@@ -176,6 +176,28 @@ function createPC(remoteUser){
     console.log(`RTC:ON-TRACK: Recieved remote stream from ${remoteUser.username}`);
     displayRemoteStream(remoteUser, event.streams[0]);
   }
+  
+  // Triggered automatically when addTrack() or removeTrack() is called mid-call
+  pc.onnegotiationneeded = async () => {
+    try{
+      console.log(`RTC:NEGOTIATION | Hardware changed, renegotiating with ${remoteUser.username}`);
+
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+
+      const senderUser = users.get(socket.id);
+
+      socket.emit("offer", {
+        offer: pc.localDescription,
+        targetSocketId: remoteUser.socketId,
+        senderUser: senderUser
+      });
+    }
+    catch (e){
+      console.error("RTC:ERROR | Renegotiation failed", error);
+    }
+  }
+  
   pc.onconnectionstatechange = () => {
     console.log(`RTC:STATE-CHANGE | Connection with ${remoteUser.username}: ${pc.connectionState}`);
   }
@@ -278,16 +300,21 @@ function displayRemoteStream(remoteUser, stream){
   }
 }
 
-// TODO: Write a function: displayRemoteStream(stream)
-// Inside:
-//   Find the first participant <video> element inside #vid-others
-//   that does not yet have a srcObject assigned.
-//   Hint: loop over $(".participant video") and check if srcObject is null.
-//   Set srcObject = stream on the found element.
-//   Call .play() on it.
-//   Hide the overlay for that participant tile.
-//   console.log("Remote stream displayed")
 
+function addTrackToPeer(track, stream){
+  peerConnections.forEach((pc) => {
+    const senders = pc.getSenders();
+    const trackExists = senders.some(sender => sender.track === track);
+    if (!trackExists) pc.addTrack(track, stream);
+  })
+}
+
+function removeTrackFromPeer(track){
+  peerConnections.forEach((pc) => {
+    const sender = pc.getSenders().find(s => s.track === track);
+    if (sender) pc.removeTrack(sender);
+  })
+}
 
 // ============================================================
 // SECTION 7: HANDLE USER LEFT
@@ -348,5 +375,5 @@ socket.on("chat-message", (data)=>{
 // ============================================================
 
 // TODO: Export everything that app.js needs to call directly:
-export {setLocalStream, setMeetCode, joinRoom, createPC, sendChatMessage};
+export {setLocalStream, setMeetCode, joinRoom, createPC, sendChatMessage, addTrackToPeer, removeTrackFromPeer};
 // export {joinRoom, sendChatMessage, addTrackToPeer, removeTrackFromPeer, setLocalStream};

@@ -6,7 +6,7 @@ from 1st line to last, re-initializing the global variables. To maintain state:
 */
 
 // import {setLocalStream, setMeetCode, joinRoom, sendChatMessage, addTrackToPeer, addTrackFromPeer, setLocalStream} from './webRTC.js';
-import {setLocalStream, setMeetCode, joinRoom, sendChatMessage} from './webRTC.js';
+import {setLocalStream, setMeetCode, joinRoom, sendChatMessage, addTrackToPeer, removeTrackFromPeer} from './webRTC.js';
 
 // GLOBAL VARIABLES
 var USER = {};
@@ -159,6 +159,7 @@ async function enableVideo() {
         
         // Set LocalStream variable in webRTC.js
         setLocalStream(localStream);
+        addTrackToPeer(videoTrack, localStream); // <--- ADD THIS LINE
 
         // 4. Point the video element at localStream.
         //    srcObject must be set to null first to force the browser to re-read the stream.
@@ -202,6 +203,7 @@ function disableVideo() {
     // 4. Remove the dead track from the stream.
     //    A stopped track cannot be restarted — keeping it causes problems.
     localStream.removeTrack(videoTrack);
+    removeTrackFromPeer(videoTrack);
 
     // 5. Show the overlay and mark the video button as inactive.
     $("#vid-pinned-overlay").fadeIn(); // FIX: was $("vid-pinned-overlay") — missing #
@@ -229,6 +231,7 @@ async function enableAudio() {
         }
         // Set LocalStream variable in webRTC.js
         setLocalStream(localStream);
+        addTrackToPeer(audioTrack, localStream);
         // 4. Mark the mic button as active.
         $("#mic-btn").addClass("active");
 
@@ -264,6 +267,7 @@ function disableAudio() {
     // 4. Remove the dead track from the stream.
     //    A stopped track cannot be restarted — keeping it causes problems.
     localStream.removeTrack(audioTrack);
+    removeTrackFromPeer(audioTrack);
 
     // 5. Mark the mic button as inactive.
     $("#mic-btn").removeClass("active");
