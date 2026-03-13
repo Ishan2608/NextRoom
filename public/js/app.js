@@ -5,8 +5,7 @@ from 1st line to last, re-initializing the global variables. To maintain state:
 - We create a method, that is run automatically on each page load, setting global variable values.
 */
 
-// import {setLocalStream, setMeetCode, joinRoom, sendChatMessage, addTrackToPeer, addTrackFromPeer, setLocalStream} from './webRTC.js';
-import {setLocalStream, setMeetCode, joinRoom, sendChatMessage, addTrackToPeer, removeTrackFromPeer} from './webRTC.js';
+import {setLocalStream, setMeetCode, joinRoom, sendChatMessage, addTrackToPeer, removeTrackFromPeer, handleUserLeft} from './webRTC.js';
 
 // GLOBAL VARIABLES
 var USER = {};
@@ -494,7 +493,7 @@ $(document).ready(function () {
     // Reset MEETCODE  and redirec to Home.
     MEETCODE = 0;
     setMeetCode(MEETCODE);
-    
+    handleUserLeft();
     window.location.href = "/";
   });
 
@@ -551,5 +550,10 @@ $(document).ready(function () {
       await enableAudio();
     }
   });
-  
+
+
+  // When user closes tab, call handleUserLeft() to clear connections.
+  $(window).on("beforeunload", function() {
+      handleUserLeft();
+  });
 });

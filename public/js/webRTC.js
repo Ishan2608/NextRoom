@@ -121,7 +121,13 @@ socket.on("user-left", ({ userId, username, email, socketId})=>{
   console.log(`SOCKET:ON:USER-LEFT | user=${username} (id=${userId}) socketId=${socketId}`);
   users.delete(socketId);
   removeParticipantFromUI(socketId);
-  // handleUserLeft();
+
+  const pc = peerConnections.get(socketId);
+  if (pc){
+    pc.close();
+    peerConnections.delete(socketId);
+    console.log(`RTC:CLEANUP | Closed specific connection for ${username}`);
+  }
 });
 
 // TODO: Get list of participants already joined in the room:
@@ -194,7 +200,7 @@ function createPC(remoteUser){
       });
     }
     catch (e){
-      console.error("RTC:ERROR | Renegotiation failed", error);
+      console.error("RTC:ERROR | Renegotiation failed", e);
     }
   }
   
@@ -320,19 +326,27 @@ function removeTrackFromPeer(track){
 // SECTION 7: HANDLE USER LEFT
 // ============================================================
 
-// TODO: Write a function: handleUserLeft()
-// Inside:
-//   If peerConnection exists:
-//     Call peerConnection.close()
-//     Set peerConnection = null
-//   If remoteStream exists:
-//     Stop all its tracks: remoteStream.getTracks().forEach(t => t.stop())
-//     Set remoteStream = null
-//   Find the participant video element that has a srcObject.
-//     Set its srcObject = null.
-//     Show its overlay again.
-//   console.log("Peer connection closed, remote stream cleared")
+function handleUserLeft(){
+    console.log("RTC:CLEANUP: Cleaning up WebRTC and Socket State...");
+    peerConnections.forEach((pc, socketId) => {
+      pc.close();
+      const user = users.get(socketId)
+      console.log(`RTC:CLEAUP | Closed Connection with ${socketId} = ${user.username}`);
+    });
+    peerConnections.clear();
 
+    if (localStream){
+      localStream.getTracks().forEach(track => track.stop());
+      localStream = null;
+      console.log("RTC:CLEANUP | Local media Tracks Stopped");
+    }
+    users.clear();
+    currentMeetCode = null;
+
+    if(socket.connected) {
+      socket.disconnect();
+    }
+}
 
 // ============================================================
 // SECTION 8: CHAT MESSAGES
@@ -351,29 +365,8 @@ socket.on("chat-message", (data)=>{
 
 
 // ============================================================
-// SECTION 9: TRACK SYNC (enable/disable mid-call)
-// ============================================================
-
-// TODO: Write and export a function: addTrackToPeer(track, localStream)
-// Called from enableVideo() and enableAudio() in app.js after a track is created.
-// Inside:
-//   If peerConnection is null, return — no active call yet, nothing to sync.
-//   Call peerConnection.addTrack(track, localStream)
-
-// TODO: Write and export a function: removeTrackFromPeer(track)
-// Called from disableVideo() and disableAudio() in app.js before a track is stopped.
-// Inside:
-//   If peerConnection is null, return.
-//   Find the matching sender: peerConnection.getSenders()
-//     A sender is the outgoing track wrapper inside the peer connection.
-//     Find the one where sender.track === track.
-//   If found, call peerConnection.removeTrack(sender).
-
-
-// ============================================================
 // EXPORTS
 // ============================================================
 
 // TODO: Export everything that app.js needs to call directly:
-export {setLocalStream, setMeetCode, joinRoom, createPC, sendChatMessage, addTrackToPeer, removeTrackFromPeer};
-// export {joinRoom, sendChatMessage, addTrackToPeer, removeTrackFromPeer, setLocalStream};
+export {setLocalStream, setMeetCode, joinRoom, createPC, sendChatMessage, addTrackToPeer, removeTrackFromPeer, handleUserLeft};
