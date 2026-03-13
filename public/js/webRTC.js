@@ -34,10 +34,10 @@ socket.on("disconnect", () => {
 // ============================================================
 
 var currentMeetCode = null;
-var pc;
+var users = new Map();
+var peerConnections = new Map();
 var localStream = null;
 var remoteMediaStream = null;
-var users = new Map();
 
 const iceConfig = {
   iceServers: [ {urls: 'stun:stun.l.google.com:19302'} ]
@@ -79,8 +79,6 @@ function removeParticipantFromUI(socketId) {
   $(`#p-container-${socketId}`).remove();
 }
 
-
-
 // ============================================================
 // SECTION 3: JOIN ROOM
 // ============================================================
@@ -92,9 +90,20 @@ function joinRoom(meetCode, userId, username, email){
 
   $("#vid-pinned-overlay-profile").text(getUserInitials(username));
   $("#vid-pinned-overlay-name").text(username);
-  
-  socket.emit("join-room", {meetCode, userId, username, email});
-  console.log(`SOCKET:EMIT:JOIN-ROOM | user=${username} (id=${userId}) joining room=${meetCode}`);
+
+  // Define the logic to execute once connected
+  const executeJoin = () => {
+    users.set(socket.id, { userId, username, email, socketId: socket.id });
+    socket.emit("join-room", { meetCode, userId, username, email });
+    console.log(`SOCKET:EMIT:JOIN-ROOM | user=${username} (id=${userId}) joining room=${meetCode}`);
+  };
+
+  // Check if socket is already connected. If not, wait for the connect event.
+  if (socket.connected) {
+    executeJoin();
+  } else {
+    socket.on("connect", executeJoin);
+  }
 }
 
 // TODO: Listen for "user-joined" event from the server.
@@ -104,7 +113,7 @@ socket.on("user-joined", ({ userId, username, email, socketId })=>{
   users.set(socketId, {userId, username, email, socketId});
   const userData = {userId: userId, username: username, email: email, socketId: socketId};
   addParticipantToUI(userData);
-  // createOffer();
+  createOffer(userData);
 });
 
 // TODO: Listen for "user-left" event from the server.
@@ -119,9 +128,15 @@ socket.on("user-left", ({ userId, username, email, socketId})=>{
 socket.on("get-others", (others) => {
   // others = [{userId: , username: , email: , socketId: }, ...]
   // Empty out the old list (before page reload if any, to get a fresh list.)
+  const localUserData = users.get(socket.id);
   users.clear();
   // 2. IMPORTANT: Clear the UI container to prevent duplicates on reload
   $("#vid-others").empty();
+
+  if (localUserData) {
+    users.set(socket.id, localUserData);
+  }
+  
   console.log(`SOCKET:ON:GET-OTHERS: List of other participants is...`);
   console.log(others);
   for (const other of others){
@@ -134,85 +149,134 @@ socket.on("get-others", (others) => {
 // SECTION 4: CREATE PEER CONNECTION
 // ============================================================
 
-// TODO: Write a function: createPeerConnection(localStream)
-// This is called before creating an offer or answer.
-function createPeerConnection(localStream){
-  pc = new RTCPeerConnection(iceConfig);
+function createPC(remoteUser){
+  const pc = new RTCPeerConnection(iceConfig);
 
-  // This is what sends YOUR video/audio to the remote user.
-  localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+  // Map this connection to remote user's socket id.
+  peerConnections.set(remoteUser.socketId, pc);
 
-  pc.onicecandidate = (event)=>{
-    if(event.candidate) {
-      socket.emit("ice-candidate", { candidate: event.candidate, meetCode: currentMeetCode });
-      console.log(`SOCKET-EVENT:EMIT:ICE-CANDIDATE: For meet = ${currentMeetCode}`);
-    }
-  };
-  // When fired, event.streams[0] is the remote user's live MediaStream.
-  pc.ontrack = (event)=>{
-    remoteMediaStream = event.streams[0]
-    console.log(`RTC-EVENT:ON-TRACK: Remote Stream recieved`);
-    // displayRemoteStream(remoteMediaStream);
-  };
-
-  pc.onconnectionstatechange = ()=>{
-    console.log(`RTC-EVENT:ON-CONNECTION-STATE-CHANGE: Connection state is changing...`);
-    console.log(`Connection State => ${pc.connectionState}`);
+  // If the local user has enabled media (camera/mic), attach these tracks to the connection.
+  // Intuitive Explanation: Think of this as plugging your local microphone cable into the dedicated pipeline for this specific user.
+  if (localStream) {
+    localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
   }
+
+  pc.onicecandidate = (event) => {
+    if (event.candidate){
+      const senderUser = users.get(socket.id);
+      socket.emit("ice-candidate", {
+        candidate: event.candidate,
+        targetSocketId: remoteUser.socketId,
+        senderUser: senderUser
+      });
+    }
+  }
+
+  pc.ontrack = (event) => {
+    console.log(`RTC:ON-TRACK: Recieved remote stream from ${remoteUser.username}`);
+    displayRemoteStream(remoteUser, event.streams[0]);
+  }
+  pc.onconnectionstatechange = () => {
+    console.log(`RTC:STATE-CHANGE | Connection with ${remoteUser.username}: ${pc.connectionState}`);
+  }
+  return pc;
 }
 
 // ============================================================
 // SECTION 5: OFFER AND ANSWER
 // ============================================================
 
-// Called by the user already in the room when a new user joins.
-// TODO: Write a function: createOffer(localStream)
-// Called by the user who was already in the room when a new user joins.
-// Inside:
-//   Call createPeerConnection(localStream).
-//   Call peerConnection.createOffer() — this is async, use await.
-//   Call peerConnection.setLocalDescription(offer) — store it on our side.
-//   Emit "offer" to the server.
-//   Pass: { offer: peerConnection.localDescription, meetCode: MEETCODE }
-//   console.log("Offer created and sent")
+async function createOffer(remoteUser){
+  const pc = createPC(remoteUser);
 
-// TODO: Write a function: createAnswer(offer, localStream)
-// Called by the user who just joined, after receiving an offer.
-// Inside:
-//   Call createPeerConnection(localStream).
-//   Call peerConnection.setRemoteDescription(offer) — store what the other side sent.
-//   Call peerConnection.createAnswer() — async, use await.
-//   Call peerConnection.setLocalDescription(answer).
-//   Emit "answer" to the server.
-//   Pass: { answer: peerConnection.localDescription, meetCode: MEETCODE }
-//   console.log("Answer created and sent")
+  const offer = await pc.createOffer(); // Create offer to send.
+  await pc.setLocalDescription(offer); // store in LocalDescription.
 
-// TODO: Listen for "offer" event from server.
-// Inside:
-//   console.log("Offer received")
-//   Call createAnswer(event.offer, localStream)
-//   Note: localStream must be passed in or accessed here.
-//   You will need to think about how to get localStream into this file.
-//   One clean approach: export a function setLocalStream(stream) that stores
-//   it in a module-level variable inside rtc.js.
+  const senderUser = users.get(socket.id);
+  socket.emit("offer", {
+    offer: pc.localDescription,
+    targetSocketId: remoteUser.socketId,
+    senderUser: senderUser
+  });
 
-// TODO: Listen for "answer" event from server.
-// Inside:
-//   console.log("Answer received")
-//   Call peerConnection.setRemoteDescription(answer)
-//   Wrap in try/catch.
+  console.log(`RTC:EMIT:OFFER | ${senderUser.username} Sen offer to ${remoteUser.username}`);
+}
 
-// TODO: Listen for "ice-candidate" event from server.
-// Inside:
-//   Create a new RTCIceCandidate from the received data.
-//   Call peerConnection.addIceCandidate(candidate)
-//   Wrap in try/catch — a bad candidate should not crash the call.
-//   console.log("ICE candidate added")
+async function createAnswer(offer, remoteUser){
+  const pc = createPC(remoteUser);
 
+  // Store sender's offer.
+  await pc.setRemoteDescription(new RTCSessionDescription(offer));
+
+  // Generate Answer SDP.
+  const answer = await pc.createAnswer();
+  await pc.setLocalDescription(answer);
+
+  const senderUser = users.get(socket.id);
+  socket.emit("answer", {
+    answer: pc.localDescription,
+    targetSocketId: remoteUser.socketId,
+    senderUser: senderUser
+  });
+  console.log(`RTC:EMIT:ANSWER | ${senderUser.username} Sent answer to ${remoteUser.username}`);
+}
+
+
+// Listen for an incoming offer
+
+socket.on("offer", async ({offer, senderUser}) => {
+  console.log(`SOCKET:ON:OFFER | Received offer from ${senderUser.username}`);
+  // Add the offer sender if already not in users HashMap
+  if (!users.has(senderUser.socketId)){
+    users.set(senderUser.socketId, senderUser);
+  }
+
+  // Send him an Answer.
+  await createAnswer(offer, senderUser);
+});
+
+socket.on("answer", async ({answer, senderUser}) => {
+  console.log(`SOCKET:ON:ANSWER | Received answer from ${senderUser.username}`);
+  const pc = peerConnections.get(senderUser.socketId);
+  if (pc) {
+    await pc.setRemoteDescription(new RTCSessionDescription(answer));
+  } else {
+    console.error(`RTC:ERROR | No peer connection found for ${senderUser.username}`);
+  }
+});
+
+socket.on("ice-candidate", async ({candidate, senderUser}) => {
+  const pc = peerConnections.get(senderUser.socketId);
+
+  if (pc){
+    try{
+      await pc.addIceCandidate(new RTCIceCandidate(candidate));
+      console.log(`RTC:ON:ICE-CANDIDATE | Added candidate from ${senderUser.username}`);
+    }
+    catch (e){
+      console.error(`RTC:ERROR | Failed to add ICE candidate from ${senderUser.username}`, e);
+    }
+  }
+});
 
 // ============================================================
 // SECTION 6: DISPLAY REMOTE STREAM
 // ============================================================
+
+function displayRemoteStream(remoteUser, stream){
+  const videoElement = document.getElementById(`p-video-${remoteUser.socketId}`);
+  if (videoElement){
+    videoElement.srcObject= stream;
+
+    const overlayElement = document.getElementById(`p-overlay-${remoteUser.userId}`);
+    if (overlayElement) {
+      overlayElement.style.display = "none";
+    }
+    console.log(`RTC:UI | Rendered stream for ${remoteUser.username}`);
+  } else {
+    console.error(`RTC:ERROR | Video element not found for ${remoteUser.username}`);
+  }
+}
 
 // TODO: Write a function: displayRemoteStream(stream)
 // Inside:
@@ -284,5 +348,5 @@ socket.on("chat-message", (data)=>{
 // ============================================================
 
 // TODO: Export everything that app.js needs to call directly:
-export {setLocalStream, setMeetCode, joinRoom, createPeerConnection, sendChatMessage};
+export {setLocalStream, setMeetCode, joinRoom, createPC, sendChatMessage};
 // export {joinRoom, sendChatMessage, addTrackToPeer, removeTrackFromPeer, setLocalStream};

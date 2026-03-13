@@ -124,30 +124,23 @@ function initSocket(io) {
             });
         });
 
-      socket.on("offer", ( { offer, meetCode } )=>{
-        // TODO: Look up sender from rooms Map for logging.
-        const user = getRoom(meetCode)?.get(socket.id);
-        console.log(`SOCKET-EVENT:ON:OFFER: Recieved offer from ${user.username}`);
-        
-        // TODO: socket.to(meetCode).emit "offer", passing { offer }
-        socket.to(meetCode).emit("offer", { offer });
-        console.log(`SOCKET-EVENT:EMIT:OFFER: Sending offer from ${user.username} to room=${meetCode}`);
-      });
+        // ----------------------------------------------------------
+        // SIGNALLING EVENTS (WebRTC handshake, server just forwards these)
+        // ----------------------------------------------------------
 
-      socket.on("answer", ( { answer, meetCode } )=>{
-        // TODO: Look up sender from rooms Map for logging.
-        const user = getRoom(meetCode)?.get(socket.id);
-        console.log(`SOCKET-EVENT:ON:ANSWER: Recieved answer from ${user.username}`);
-        
-        socket.to(meetCode).emit("answer", { answer });
-        console.log(`SOCKET-EVENT:EMIT:ANSWER: Sending answer from ${user.username} to room=${meetCode}`);
-      });
+        socket.on("offer", ({ offer, targetSocketId, senderUser }) => {
+            console.log(`SOCKET-EVENT:ON:OFFER: Received offer from ${senderUser.username} aimed at ${targetSocketId}`);
+            socket.to(targetSocketId).emit("offer", { offer, senderUser });
+        });
 
-    
-      socket.on("ice-candidate", ( { candidate, meetCode } )=>{
-        // console.log(`SOCKET-EVENT:ON:ICE-CANDIDATE: Recieved ICE-Candidate.`);
-        socket.to(meetCode).emit("ice-candidate", { candidate });
-      });
+        socket.on("answer", ({ answer, targetSocketId, senderUser }) => {
+            console.log(`SOCKET-EVENT:ON:ANSWER: Received answer from ${senderUser.username} aimed at ${targetSocketId}`);
+            socket.to(targetSocketId).emit("answer", { answer, senderUser });
+        });
+        
+        socket.on("ice-candidate", ({ candidate, targetSocketId, senderUser }) => {
+            socket.to(targetSocketId).emit("ice-candidate", { candidate, senderUser });
+        });
 
       socket.on("disconnect", ()=> {
 
@@ -181,48 +174,10 @@ function initSocket(io) {
             console.log(`SOCKET-EVENT:ON:DISCONNECT | socketId=${socket.id} was not in any room`);
         }
         
-      });
+      }); // <--- socket.on("disconnect")
       
       
-    });
-
-
-    // ----------------------------------------------------------
-    // SIGNALLING EVENTS (WebRTC handshake, server just forwards these)
-    // ----------------------------------------------------------
-
-    // TODO: Listen for "offer" on this socket.
-    // Receives: { offer, meetCode }
-    // Inside:
-    //   Forward to all others in the room.
-    //   socket.to(meetCode).emit("offer", { offer })
-    //   console.log("Offer forwarded in room:", meetCode)
-
-    // TODO: Listen for "answer" on this socket.
-    // Receives: { answer, meetCode }
-    // Inside:
-    //   Forward to all others in the room.
-    //   socket.to(meetCode).emit("answer", { answer })
-    //   console.log("Answer forwarded in room:", meetCode)
-
-    // TODO: Listen for "ice-candidate" on this socket.
-    // Receives: { candidate, meetCode }
-    // Inside:
-    //   Forward to all others in the room.
-    //   socket.to(meetCode).emit("ice-candidate", { candidate })
-
-    // ----------------------------------------------------------
-    // CHAT EVENTS
-    // ----------------------------------------------------------
-
-    // TODO: Listen for "chat-message" on this socket.
-    // Receives: { meetCode, userId, message, timestamp }
-    // Inside:
-    //   Forward to ALL sockets in the room INCLUDING the sender.
-    //   Use: io.to(meetCode).emit("chat-message", { userId, message, timestamp })
-    //   Note: io.to() includes the sender. socket.to() excludes the sender.
-    //   For chat, the sender also needs to see their own message appear in the UI.
-
+    }); // <--- io.on("connection")
 }
 
 module.exports = {initSocket};
