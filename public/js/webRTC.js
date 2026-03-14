@@ -12,19 +12,22 @@
 // SECTION 1: SOCKET CONNECTION
 // ============================================================
 
-// TODO: Import the socket.io client library.
-// Since you are using type="module", you cannot use the global `io` from CDN directly.
 import { io } from "https://cdn.socket.io/4.8.1/socket.io.esm.min.js";
 
-// TODO: Create the socket connection.
-const socket = io(); // it will connect to the same server that served the page.
+const socket = io();
 
-// TODO: Listen for the "connect" event on the socket.
 socket.on("connect", () => {
   console.log(`SOCKET-EVENT:ON:CONNECT: Connected to socket = ${socket.id}`);
+
+  // Inform app.js of our real socket ID so the pinned container's
+  // data-active-socket is updated from the "__local__" sentinel to the
+  // true socket ID. This must happen AFTER the socket connects because
+  // socket.id is only available at that point.
+  if (typeof window.setPinnedSocketToLocal === "function") {
+    window.setPinnedSocketToLocal(socket.id);
+  }
 });
 
-// TODO: Listen for the "disconnect" event on the socket.
 socket.on("disconnect", () => {
   console.log(`SOCKET-EVENT:ON:DISCONNECT: Connection to socket = ${socket.id} TERMINATED`);
 });
@@ -37,7 +40,6 @@ var currentMeetCode = null;
 var users = new Map();
 var peerConnections = new Map();
 var localStream = null;
-var remoteMediaStream = null;
 
 const iceConfig = {
   iceServers: [ {urls: 'stun:stun.l.google.com:19302'} ]
@@ -58,17 +60,34 @@ function getUserInitials(name) {
     : name.substring(0, 2).toUpperCase();
 }
 
+/*
+  addParticipantToUI(user)
+
+  Creates the side-grid card for a remote participant.
+
+  data-active-socket is set here at card creation. This is the attribute
+  getContainerForSocket() in app.js reads to find which physical DOM element
+  currently holds a given socket's video. Every card starts with its own
+  socketId. After a pin-swap, app.js swaps this attribute between the two
+  containers so all downstream lookups follow the video to its new home.
+
+  data-rendered-socket is a permanent, never-swapped copy of the socketId.
+  It is used only by removeParticipantFromUI so a card can always be found
+  for deletion even after its active-socket has been swapped away.
+*/
 function addParticipantToUI(user){
-  // Ensure we don't add the same user twice (safety check)
   if ($(`#p-container-${user.socketId}`).length > 0) return;
-  
+
   const ins = getUserInitials(user.username);
   const participant = `
-    <div class="participant" id="p-container-${user.socketId}">
-        <video autoplay muted playsinline id="p-video-${user.socketId}"></video>
-        <div id="p-overlay-${user.userId}" class="participant-overlay">
-            <div id="p-profile-${user.socketId}" class="participant-profile">${ins}</div>
-            <div id="p-name-${user.socketId}" class="participant-name">${user.username}</div>
+    <div class="participant"
+         id="p-container-${user.socketId}"
+         data-rendered-socket="${user.socketId}"
+         data-active-socket="${user.socketId}">
+        <video autoplay playsinline id="p-video-${user.socketId}"></video>
+        <div class="participant-overlay">
+            <div class="participant-profile">${ins}</div>
+            <div class="participant-name">${user.username}</div>
         </div>
     </div>
   `;
@@ -76,29 +95,25 @@ function addParticipantToUI(user){
 }
 
 function removeParticipantFromUI(socketId) {
-  $(`#p-container-${socketId}`).remove();
+  $(`[data-rendered-socket="${socketId}"]`).remove();
 }
 
 // ============================================================
 // SECTION 3: JOIN ROOM
 // ============================================================
 
-// TODO: Write and export a function: joinRoom(meetCode, userId)
-// This is called from app.js when the room page loads.
 function joinRoom(meetCode, userId, username, email){
   users.set(socket.id, {userId: userId, username: username, email: email, socketId: socket.id});
 
   $("#vid-pinned-overlay-profile").text(getUserInitials(username));
   $("#vid-pinned-overlay-name").text(username);
 
-  // Define the logic to execute once connected
   const executeJoin = () => {
     users.set(socket.id, { userId, username, email, socketId: socket.id });
     socket.emit("join-room", { meetCode, userId, username, email });
     console.log(`SOCKET:EMIT:JOIN-ROOM | user=${username} (id=${userId}) joining room=${meetCode}`);
   };
 
-  // Check if socket is already connected. If not, wait for the connect event.
   if (socket.connected) {
     executeJoin();
   } else {
@@ -106,44 +121,51 @@ function joinRoom(meetCode, userId, username, email){
   }
 }
 
-// TODO: Listen for "user-joined" event from the server.
-// This fires when someone else enters the same room.
-socket.on("user-joined", ({ userId, username, email, socketId })=>{
+socket.on("user-joined", ({ userId, username, email, socketId }) => {
   console.log(`SOCKET:ON:USER-JOINED | New user=${username} (id=${userId}) with socketId=${socketId} joined`);
   users.set(socketId, {userId, username, email, socketId});
-  const userData = {userId: userId, username: username, email: email, socketId: socketId};
+  const userData = {userId, username, email, socketId};
   addParticipantToUI(userData);
   createOffer(userData);
 });
 
-// TODO: Listen for "user-left" event from the server.
-socket.on("user-left", ({ userId, username, email, socketId})=>{
+socket.on("user-left", ({ userId, username, email, socketId }) => {
   console.log(`SOCKET:ON:USER-LEFT | user=${username} (id=${userId}) socketId=${socketId}`);
   users.delete(socketId);
+
+  // If this user was pinned to the main slot, clear that slot before removal
+  // so it does not freeze on their last frame.
+  if (typeof window.getContainerForSocket === "function") {
+    const container = window.getContainerForSocket(socketId);
+    if (container && container.id === "vid-pinned") {
+      const pinnedVideo   = container.querySelector("video");
+      const pinnedOverlay = document.getElementById("vid-pinned-overlay");
+      if (pinnedVideo)   pinnedVideo.srcObject = null;
+      if (pinnedOverlay) pinnedOverlay.style.display = "flex";
+      console.log(`PIN:CLEANUP | Departed user ${username} was pinned; pinned slot cleared`);
+    }
+  }
+
   removeParticipantFromUI(socketId);
 
   const pc = peerConnections.get(socketId);
   if (pc){
     pc.close();
     peerConnections.delete(socketId);
-    console.log(`RTC:CLEANUP | Closed specific connection for ${username}`);
+    console.log(`RTC:CLEANUP | Closed connection for ${username}`);
   }
 });
 
-// TODO: Get list of participants already joined in the room:
 socket.on("get-others", (others) => {
-  // others = [{userId: , username: , email: , socketId: }, ...]
-  // Empty out the old list (before page reload if any, to get a fresh list.)
   const localUserData = users.get(socket.id);
   users.clear();
-  // 2. IMPORTANT: Clear the UI container to prevent duplicates on reload
   $("#vid-others").empty();
 
   if (localUserData) {
     users.set(socket.id, localUserData);
   }
-  
-  console.log(`SOCKET:ON:GET-OTHERS: List of other participants is...`);
+
+  console.log(`SOCKET:ON:GET-OTHERS: List of other participants...`);
   console.log(others);
   for (const other of others){
     users.set(other.socketId, other);
@@ -158,11 +180,8 @@ socket.on("get-others", (others) => {
 function createPC(remoteUser){
   const pc = new RTCPeerConnection(iceConfig);
 
-  // Map this connection to remote user's socket id.
   peerConnections.set(remoteUser.socketId, pc);
 
-  // If the local user has enabled media (camera/mic), attach these tracks to the connection.
-  // Intuitive Explanation: Think of this as plugging your local microphone cable into the dedicated pipeline for this specific user.
   if (localStream) {
     localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
   }
@@ -176,23 +195,133 @@ function createPC(remoteUser){
         senderUser: senderUser
       });
     }
-  }
+  };
 
   pc.ontrack = (event) => {
-    console.log(`RTC:ON-TRACK: Recieved remote stream from ${remoteUser.username}`);
-    displayRemoteStream(remoteUser, event.streams[0]);
-  }
-  
-  // Triggered automatically when addTrack() or removeTrack() is called mid-call
+    console.log(`RTC:ON-TRACK: Received track from ${remoteUser.username}, kind=${event.track.kind}`);
+
+    const stream = event.streams[0];
+
+    // Wire the video element to this stream immediately.
+    // syncOverlay (below) decides whether to show or hide the overlay.
+    const videoEl = window.getVideoForSocket
+      ? window.getVideoForSocket(remoteUser.socketId)
+      : document.getElementById(`p-video-${remoteUser.socketId}`);
+
+    if (videoEl && videoEl.srcObject !== stream) {
+      videoEl.srcObject = stream;
+      videoEl.play().catch(() => {});
+    }
+
+    /*
+      syncOverlay — the single source of visual truth for this remote user.
+
+      SIMPLE EXPLANATION:
+      Every time anything changes (track added, track removed, track ended,
+      camera toggled), we run this one function. It looks at what is ACTUALLY
+      happening on the stream right now and either shows the video or shows
+      the profile overlay. No guessing, no trusting individual events.
+
+      The key detail: when we decide to show the overlay (no live video),
+      we set videoEl.srcObject = null. Without this, the <video> element
+      keeps the last decoded frame in its render buffer and the overlay
+      renders on top of a frozen image instead of a clean background.
+
+      TECHNICAL EXPLANATION — why earlier attempts failed:
+
+      Problem A — frozen frame:
+        syncOverlay was showing the overlay but never nulling srcObject.
+        The browser does not clear the video buffer when a stream loses
+        its tracks. You must explicitly set srcObject = null.
+
+      Problem B — property assignment vs addEventListener:
+        stream.onremovetrack = fn  can only hold one handler. Chrome fires
+        pc.ontrack once per track (audio first, then video). The second
+        call overwrites the first handler. The first stream's remove-track
+        events then fire into nothing.
+        FIX: use stream.addEventListener("removetrack", ...) — supports
+        multiple listeners, never overwrites.
+
+      Problem C — tracks not yet present at ontrack time:
+        stream.getTracks() may return only the audio track when ontrack
+        fires for the audio track. The video track has not arrived yet.
+        Looping over getTracks() here misses the video track entirely.
+        FIX: also listen to stream's "addtrack" event to watch tracks
+        that arrive after this ontrack call.
+
+      Problem D — track.onended race with renegotiation:
+        When the sender stops screen share, removeTrack() triggers
+        onnegotiationneeded → new offer → createAnswer → createPC →
+        a brand-new RTCPeerConnection. The new PC's ontrack fires and
+        re-installs syncOverlay on the new stream. But there is a gap
+        between the old track ending and the new ontrack completing.
+        addEventListener on the stream handles this by accumulating
+        listeners rather than replacing them.
+    */
+    function syncOverlay() {
+      const hasLiveVideo = stream.getVideoTracks().some(
+        t => t.readyState === "live" && t.enabled
+      );
+
+      // Re-fetch the element every call because a pin-swap may have moved
+      // the active container between the pinned slot and a side card.
+      const el = window.getVideoForSocket
+        ? window.getVideoForSocket(remoteUser.socketId)
+        : document.getElementById(`p-video-${remoteUser.socketId}`);
+
+      if (!el) return;
+
+      if (hasLiveVideo) {
+        if (el.srcObject !== stream) {
+          el.srcObject = stream;
+          el.play().catch(() => {});
+        }
+        hideOverlayForSocket(remoteUser.socketId);
+        console.log(`RTC:OVERLAY:HIDE | ${remoteUser.username} — live video`);
+      } else {
+        // CRITICAL: null the srcObject to release the frozen frame.
+        // The overlay cannot render cleanly over a frozen video buffer.
+        el.srcObject = null;
+        showOverlayForSocket(remoteUser.socketId);
+        console.log(`RTC:OVERLAY:SHOW | ${remoteUser.username} — no live video`);
+      }
+    }
+
+    // watchTrack: attach syncOverlay to a single track's lifecycle events.
+    // Called for tracks present now AND tracks that arrive later.
+    function watchTrack(track) {
+      if (track.kind !== "video") return;
+      // addEventListener accumulates — safe to call multiple times on the
+      // same track without creating duplicate listeners (the browser
+      // deduplicates identical listener references automatically).
+      track.addEventListener("ended",  syncOverlay);
+      track.addEventListener("mute",   syncOverlay);
+      track.addEventListener("unmute", syncOverlay);
+      console.log(`RTC:WATCH | Watching video track from ${remoteUser.username}`);
+    }
+
+    // Watch any video tracks already on the stream.
+    stream.getTracks().forEach(watchTrack);
+
+    // Watch tracks added later (e.g. screen share starts mid-call).
+    // addEventListener is used here specifically to avoid overwriting the
+    // listener installed by a previous ontrack call for a different track.
+    stream.addEventListener("addtrack", (e) => {
+      watchTrack(e.track);
+      syncOverlay();
+    });
+    stream.addEventListener("removetrack", syncOverlay);
+
+    // Sync immediately to establish correct initial visual state.
+    syncOverlay();
+  };
+
   pc.onnegotiationneeded = async () => {
     try{
       console.log(`RTC:NEGOTIATION | Hardware changed, renegotiating with ${remoteUser.username}`);
-
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
-
       const senderUser = users.get(socket.id);
-
       socket.emit("offer", {
         offer: pc.localDescription,
         targetSocketId: remoteUser.socketId,
@@ -202,11 +331,12 @@ function createPC(remoteUser){
     catch (e){
       console.error("RTC:ERROR | Renegotiation failed", e);
     }
-  }
-  
+  };
+
   pc.onconnectionstatechange = () => {
     console.log(`RTC:STATE-CHANGE | Connection with ${remoteUser.username}: ${pc.connectionState}`);
-  }
+  };
+
   return pc;
 }
 
@@ -217,8 +347,8 @@ function createPC(remoteUser){
 async function createOffer(remoteUser){
   const pc = createPC(remoteUser);
 
-  const offer = await pc.createOffer(); // Create offer to send.
-  await pc.setLocalDescription(offer); // store in LocalDescription.
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
 
   const senderUser = users.get(socket.id);
   socket.emit("offer", {
@@ -227,16 +357,14 @@ async function createOffer(remoteUser){
     senderUser: senderUser
   });
 
-  console.log(`RTC:EMIT:OFFER | ${senderUser.username} Sen offer to ${remoteUser.username}`);
+  console.log(`RTC:EMIT:OFFER | ${senderUser.username} sent offer to ${remoteUser.username}`);
 }
 
 async function createAnswer(offer, remoteUser){
   const pc = createPC(remoteUser);
 
-  // Store sender's offer.
   await pc.setRemoteDescription(new RTCSessionDescription(offer));
 
-  // Generate Answer SDP.
   const answer = await pc.createAnswer();
   await pc.setLocalDescription(answer);
 
@@ -246,20 +374,14 @@ async function createAnswer(offer, remoteUser){
     targetSocketId: remoteUser.socketId,
     senderUser: senderUser
   });
-  console.log(`RTC:EMIT:ANSWER | ${senderUser.username} Sent answer to ${remoteUser.username}`);
+  console.log(`RTC:EMIT:ANSWER | ${senderUser.username} sent answer to ${remoteUser.username}`);
 }
-
-
-// Listen for an incoming offer
 
 socket.on("offer", async ({offer, senderUser}) => {
   console.log(`SOCKET:ON:OFFER | Received offer from ${senderUser.username}`);
-  // Add the offer sender if already not in users HashMap
   if (!users.has(senderUser.socketId)){
     users.set(senderUser.socketId, senderUser);
   }
-
-  // Send him an Answer.
   await createAnswer(offer, senderUser);
 });
 
@@ -275,7 +397,6 @@ socket.on("answer", async ({answer, senderUser}) => {
 
 socket.on("ice-candidate", async ({candidate, senderUser}) => {
   const pc = peerConnections.get(senderUser.socketId);
-
   if (pc){
     try{
       await pc.addIceCandidate(new RTCIceCandidate(candidate));
@@ -288,38 +409,43 @@ socket.on("ice-candidate", async ({candidate, senderUser}) => {
 });
 
 // ============================================================
-// SECTION 6: DISPLAY REMOTE STREAM
+// SECTION 6: OVERLAY HELPERS
 // ============================================================
 
-function displayRemoteStream(remoteUser, stream){
-  const videoElement = document.getElementById(`p-video-${remoteUser.socketId}`);
-  if (videoElement){
-    videoElement.srcObject= stream;
+/*
+  showOverlayForSocket / hideOverlayForSocket
 
-    const overlayElement = document.getElementById(`p-overlay-${remoteUser.userId}`);
-    if (overlayElement) {
-      overlayElement.style.display = "none";
-    }
-    console.log(`RTC:UI | Rendered stream for ${remoteUser.username}`);
-  } else {
-    console.error(`RTC:ERROR | Video element not found for ${remoteUser.username}`);
-  }
+  These are called only by syncOverlay() inside pc.ontrack.
+  They use window.getOverlayForSocket (defined in app.js) to find the
+  overlay element in whichever container — pinned slot or side card —
+  currently holds this socket's video. This means they work correctly
+  regardless of how many pin-swaps have occurred.
+*/
+function showOverlayForSocket(socketId) {
+  if (!window.getOverlayForSocket) return;
+  const overlay = window.getOverlayForSocket(socketId);
+  if (overlay) overlay.style.display = "flex";
 }
 
+function hideOverlayForSocket(socketId) {
+  if (!window.getOverlayForSocket) return;
+  const overlay = window.getOverlayForSocket(socketId);
+  if (overlay) overlay.style.display = "none";
+}
 
 function addTrackToPeer(track, stream){
   peerConnections.forEach((pc) => {
     const senders = pc.getSenders();
     const trackExists = senders.some(sender => sender.track === track);
     if (!trackExists) pc.addTrack(track, stream);
-  })
+  });
 }
 
 function removeTrackFromPeer(track){
   peerConnections.forEach((pc) => {
     const sender = pc.getSenders().find(s => s.track === track);
     if (sender) pc.removeTrack(sender);
-  })
+  });
 }
 
 // ============================================================
@@ -327,25 +453,25 @@ function removeTrackFromPeer(track){
 // ============================================================
 
 function handleUserLeft(){
-    console.log("RTC:CLEANUP: Cleaning up WebRTC and Socket State...");
-    peerConnections.forEach((pc, socketId) => {
-      pc.close();
-      const user = users.get(socketId)
-      console.log(`RTC:CLEAUP | Closed Connection with ${socketId} = ${user.username}`);
-    });
-    peerConnections.clear();
+  console.log("RTC:CLEANUP: Cleaning up WebRTC and Socket State...");
+  peerConnections.forEach((pc, socketId) => {
+    pc.close();
+    const user = users.get(socketId);
+    console.log(`RTC:CLEANUP | Closed connection with ${socketId} = ${user?.username}`);
+  });
+  peerConnections.clear();
 
-    if (localStream){
-      localStream.getTracks().forEach(track => track.stop());
-      localStream = null;
-      console.log("RTC:CLEANUP | Local media Tracks Stopped");
-    }
-    users.clear();
-    currentMeetCode = null;
+  if (localStream){
+    localStream.getTracks().forEach(track => track.stop());
+    localStream = null;
+    console.log("RTC:CLEANUP | Local media tracks stopped");
+  }
+  users.clear();
+  currentMeetCode = null;
 
-    if(socket.connected) {
-      socket.disconnect();
-    }
+  if (socket.connected) {
+    socket.disconnect();
+  }
 }
 
 // ============================================================
@@ -358,24 +484,23 @@ function sendChatMessage(meetCode, userId, message){
   console.log(`SOCKET:EMIT:CHAT-MESSAGE: ${userId} sends message: ${message}`);
 }
 
-socket.on("chat-message", (data)=>{
-  console.log(`SOCKET:ON:CHAT-MESSAGE: Reading sent message ...`);
-  displayChatMessage(data);
+socket.on("chat-message", (data) => {
+  console.log(`SOCKET:ON:CHAT-MESSAGE: Reading sent message...`);
+  if (typeof window.displayChatMessage === "function") {
+    window.displayChatMessage(data);
+  }
 });
-
 
 // ============================================================
 // EXPORTS
 // ============================================================
 
-
 function getUsers() {
-    return users;
+  return users;
 }
 
-// TODO: Export everything that app.js needs to call directly:
 export {
-  setLocalStream, setMeetCode, 
+  setLocalStream, setMeetCode,
   joinRoom, createPC, sendChatMessage, addTrackToPeer, removeTrackFromPeer, handleUserLeft,
   getUsers
 };

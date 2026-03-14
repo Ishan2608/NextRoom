@@ -158,20 +158,20 @@ async function enableVideo() {
         //    IF localStream exists  → insert the new video track into the existing stream.
         //    IF localStream is null → this is the very first media action, assign directly.
         if (localStream) {
-            localStream.addTrack(videoTrack); // FIX: was addTrack() with no argument
+            localStream.addTrack(videoTrack);
         } else {
             localStream = tempStream;
         }
         
         // Set LocalStream variable in webRTC.js
         setLocalStream(localStream);
-        addTrackToPeer(videoTrack, localStream); // <--- ADD THIS LINE
+        addTrackToPeer(videoTrack, localStream);
 
         // 4. Point the video element at localStream.
         //    srcObject must be set to null first to force the browser to re-read the stream.
         //    Without this, the browser may not detect the newly added track.
         const videoElement = document.getElementById("vid-pinned-video");
-        videoElement.srcObject = null; // FIX: was missing — browser needs this nudge
+        videoElement.srcObject = null;
         videoElement.srcObject = localStream;
         videoElement.play();
 
@@ -212,7 +212,7 @@ function disableVideo() {
     removeTrackFromPeer(videoTrack);
 
     // 5. Show the overlay and mark the video button as inactive.
-    $("#vid-pinned-overlay").fadeIn(); // FIX: was $("vid-pinned-overlay") — missing #
+    $("#vid-pinned-overlay").fadeIn();
     $("#video-btn").removeClass("active");
 }
 
@@ -259,8 +259,6 @@ function disableAudio() {
     const audioTrack = localStream.getAudioTracks()[0];
 
     // 2. Guard: if no audio track exists, or it is already dead, return early.
-    //    FIX: was readyState === "live" which is inverted — that would return early
-    //    when the track IS live, which is the opposite of what we want.
     if (!audioTrack || audioTrack.readyState !== "live") {
         showModal("Microphone Error", "Microphone is already disabled.");
         return;
@@ -401,12 +399,199 @@ function showParticipantsModal() {
     $(".participants-modal-overlay").show();
 }
 
+// ============================================================
+// PINNING SYSTEM
+// ============================================================
+
+/*
+  SIMPLE EXPLANATION:
+  Think of the pinned container and the side-grid cards as picture frames.
+  A "frame" doesn't own the photo — it just holds whatever photo you put in it.
+  When you pin someone, you're swapping which photo goes in which frame.
+  The KEY insight: after the swap, we write a sticky note on each frame that says
+  "this frame currently holds socketId=XYZ". Every other part of the code reads
+  that sticky note FIRST, then decides which frame to update.
+
+  TECHNICAL EXPLANATION:
+  We maintain a single source of truth: `data-active-socket` attributes on both
+  the pinned container and every side-grid participant card. When a stream event
+  fires (track received, camera muted, user left), the handler calls
+  `getContainerForSocket(socketId)` which scans the DOM for whichever element
+  currently bears that socket's active-socket attribute — not a hardcoded ID.
+  This means swapping only needs to update the data attributes, and all
+  downstream event handlers automatically follow the socket to its new container.
+*/
+
+// The local user's socket ID is not known at app.js init time (it's set by webRTC.js
+// after socket connection). We use a sentinel value that signals "local user owns
+// the pinned slot" on initial load. webRTC.js calls setPinnedSocket(socket.id)
+// once connected.
+const LOCAL_SENTINEL = "__local__";
+
+// On page load, the pinned container represents the local user.
+// We mark it with a sentinel so getContainerForSocket can find it before
+// the real socket ID is known.
+function initPinningState() {
+  const pinnedContainer = document.getElementById("vid-pinned");
+  if (pinnedContainer) {
+    pinnedContainer.dataset.activeSocket = LOCAL_SENTINEL;
+  }
+}
+
+/*
+  getContainerForSocket(socketId)
+
+  Returns the DOM element (either #vid-pinned or a .participant card) that
+  currently holds the given socket's video and overlay.
+  Returns null if no container is found (user not yet in DOM).
+*/
+function getContainerForSocket(socketId) {
+  // Check the pinned container first (most common hot path after a pin).
+  const pinned = document.getElementById("vid-pinned");
+  if (pinned && pinned.dataset.activeSocket === socketId) {
+    return pinned;
+  }
+  // Fall back to scanning the side grid.
+  return document.querySelector(`#vid-others [data-active-socket="${socketId}"]`) || null;
+}
+
+/*
+  getVideoForSocket(socketId)
+  getOverlayForSocket(socketId)
+
+  Thin wrappers so call sites stay readable.
+*/
+function getVideoForSocket(socketId) {
+  const container = getContainerForSocket(socketId);
+  if (!container) return null;
+  return container.querySelector("video");
+}
+
+function getOverlayForSocket(socketId) {
+  const container = getContainerForSocket(socketId);
+  if (!container) return null;
+  // The pinned container uses #vid-pinned-overlay; side cards use .participant-overlay.
+  // We do NOT care about the ID — we just grab whatever overlay element lives
+  // inside this container. That way the function works identically for both slots.
+  return container.querySelector(".participant-overlay, #vid-pinned-overlay");
+}
+
+// Expose to webRTC.js via window so it can call these without creating a circular import.
+window.getVideoForSocket    = getVideoForSocket;
+window.getOverlayForSocket  = getOverlayForSocket;
+window.getContainerForSocket = getContainerForSocket;
+
+// Called from webRTC.js once the socket connects so the pinned slot gets its real ID.
+function setPinnedSocketToLocal(realSocketId) {
+  const pinned = document.getElementById("vid-pinned");
+  if (pinned && pinned.dataset.activeSocket === LOCAL_SENTINEL) {
+    pinned.dataset.activeSocket = realSocketId;
+  }
+}
+window.setPinnedSocketToLocal = setPinnedSocketToLocal;
+
+
+// ============================================================
+// PARTICIPANT CLICK → PIN SWAP
+// ============================================================
+
+/*
+  WHAT WE SWAP (data only, no DOM node moves):
+    1. video.srcObject          — the MediaStream reference
+    2. overlay text             — initials and name strings
+    3. overlay visibility       — shown/hidden state
+    4. data-active-socket       — THE CRITICAL PART: which socket lives in which frame
+
+  WHAT WE DO NOT TOUCH:
+    - Element IDs (CSS depends on #vid-pinned-overlay, #vid-pinned-overlay-profile, etc.)
+    - CSS classes on any element
+    - The DOM hierarchy / node positions
+
+  WHY data-active-socket fixes both bugs:
+    Bug 1 (Hardware Mute): After a swap, displayRemoteStream and showOverlayForSocket
+          call getVideoForSocket(socketId) which reads data-active-socket, so they
+          always find the correct physical container regardless of how many pins
+          have occurred.
+
+    Bug 2 (CSS Distortion): We no longer copy text into the wrong-class element.
+          The pinned overlay profile uses #vid-pinned-overlay-profile (styled as
+          .user-initials). The side-card profile uses .participant-profile. After
+          the swap the same element keeps its class — only the text inside changes.
+          Both elements already had text in them before the swap; the font-size
+          discrepancy was caused by the OLD code writing the pinned slot's
+          .user-initials text into a .participant-profile element during a
+          re-render. Now the classes never migrate.
+*/
+
+$(document).on("click", ".participant", function () {
+  const partContainer  = this; // The side-grid card that was clicked.
+  const pinnedContainer = document.getElementById("vid-pinned");
+
+  // ---- 1. Gather video elements ----
+  const pinnedVideo = pinnedContainer.querySelector("video");
+  const partVideo   = partContainer.querySelector("video");
+
+  // ---- 2. Gather overlay elements ----
+  // Pinned slot: uses specific IDs wired up by the HTML.
+  const pinnedOverlay  = document.getElementById("vid-pinned-overlay");
+  const pinnedProfile  = document.getElementById("vid-pinned-overlay-profile");
+  const pinnedName     = document.getElementById("vid-pinned-overlay-name");
+
+  // Side card: uses class-based selectors so we stay agnostic of dynamic IDs.
+  const partOverlay  = partContainer.querySelector(".participant-overlay");
+  const partProfile  = partContainer.querySelector(".participant-profile");
+  const partName     = partContainer.querySelector(".participant-name");
+
+  // ---- 3. Swap MediaStream references ----
+  const tempStream      = pinnedVideo.srcObject;
+  pinnedVideo.srcObject = partVideo.srcObject;
+  partVideo.srcObject   = tempStream;
+
+  if (pinnedVideo.srcObject) pinnedVideo.play();
+  if (partVideo.srcObject)   partVideo.play();
+
+  // ---- 4. Swap overlay text (initials and name) ----
+  const tempInitials    = pinnedProfile.innerText;
+  pinnedProfile.innerText = partProfile.innerText;
+  partProfile.innerText   = tempInitials;
+
+  const tempName      = pinnedName.innerText;
+  pinnedName.innerText  = partName.innerText;
+  partName.innerText    = tempName;
+
+  // ---- 5. Swap overlay visibility ----
+  // Read computed style to handle cases where inline style is absent (initial render).
+  const pinnedOverlayVisible = window.getComputedStyle(pinnedOverlay).display !== "none";
+  const partOverlayVisible   = window.getComputedStyle(partOverlay).display   !== "none";
+
+  pinnedOverlay.style.display = partOverlayVisible   ? "flex" : "none";
+  partOverlay.style.display   = pinnedOverlayVisible ? "flex" : "none";
+
+  // ---- 6. Swap data-active-socket attributes ----
+  // This is what makes all future event handlers (ontrack, onmute, user-left)
+  // automatically target the correct physical container.
+  const tempSocketId               = pinnedContainer.dataset.activeSocket;
+  pinnedContainer.dataset.activeSocket = partContainer.dataset.activeSocket;
+  partContainer.dataset.activeSocket   = tempSocketId;
+
+  console.log(
+    `PIN:SWAP | Pinned container now shows socket=${pinnedContainer.dataset.activeSocket}, ` +
+    `side card ${partContainer.id} now shows socket=${partContainer.dataset.activeSocket}`
+  );
+});
+
+
 // When Page is Loaded and JS is ready to run.
 $(document).ready(function () {
   
   // First, sync state, regardless of Page.
   syncState();
   window.__currentUserId = USER.id;
+
+  // Initialize pinning state so the pinned container gets its sentinel attribute.
+  if (window.location.pathname.includes("room")) {
+    initPinningState();
+  }
 
   // -----------------------------------------------------------------
   // HOME PAGE
@@ -556,7 +741,6 @@ $(document).ready(function () {
           // Set Global Variables.
           USER = res.user;
           ISLOGGED = true;
-          // console.log(`Returned user data= ${USER}`);
 
           // Redirect to Home Page.
           window.location.href = "/";
@@ -581,24 +765,21 @@ $(document).ready(function () {
 
   // When User Clicks on Share Link Button.
   $(".share-link-btn").on("click", function () {
-    // Since we are on room.html, syncState already set MEETCODE.
-    // Just Write that to ClipBoard.
     navigator.clipboard.writeText(MEETCODE).then(() => {
       const title = "Meeting Link Copied";
       const body = `Meeting Link = ${MEETCODE} has been copied to Clipboard`;
-      // Show the Message through Modal.
       showModal(title, body);
     });
   });
 
-  // There are two Leav Call Buttons. When User clicks on either of them,
+  // There are two Leave Call Buttons. When User clicks on either of them,
   $(".leave-call-btn, button#hangup-btn").on("click", function () {
     // Stop all active tracks before leaving to release hardware.
     if (localStream) {
       localStream.getTracks().forEach(track => track.stop());
       localStream = null;
     }
-    // Reset MEETCODE  and redirec to Home.
+    // Reset MEETCODE and redirect to Home.
     MEETCODE = 0;
     setMeetCode(MEETCODE);
     handleUserLeft();
@@ -641,7 +822,6 @@ $(document).ready(function () {
   $("#vid-pinned-overlay-name").text(USER.username);
 
   $("#video-btn").on("click", async function() {
-    // If no stream exists at all, this is the first time — enable video.
     if (!localStream) {
       await enableVideo();
       return;
@@ -649,17 +829,14 @@ $(document).ready(function () {
 
     const videoTrack = localStream.getVideoTracks()[0];
     if (videoTrack && videoTrack.readyState === "live") {
-      // A live video track exists — user wants to turn camera off.
       disableVideo();
     } else {
-      // Stream exists but has no live video track — user wants to turn camera on.
       await enableVideo();
     }
   });
 
   // ================ MIC BUTTON ================
   $("#mic-btn").on("click", async function () {
-    // If no stream exists at all, this is the first time — enable audio.
     if (!localStream) {
       await enableAudio();
       return;
@@ -668,10 +845,8 @@ $(document).ready(function () {
     const audioTrack = localStream.getAudioTracks()[0];
 
     if (audioTrack && audioTrack.readyState === "live") {
-      // A live audio track exists — user wants to turn mic off.
       disableAudio();
     } else {
-      // Stream exists but has no live audio track — user wants to turn mic on.
       await enableAudio();
     }
   });
@@ -683,6 +858,7 @@ $(document).ready(function () {
           stopScreenShare();
       }
   });
+
   // When user closes tab, call handleUserLeft() to clear connections.
   $(window).on("beforeunload", function() {
       handleUserLeft();
