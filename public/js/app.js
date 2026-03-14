@@ -17,6 +17,9 @@ var ISLOGGED = false;
 var MEETCODE = 0;
 var localStream = null;
 
+var isScreenSharing = false;
+var screenTrack = null;
+
 // -------- Utility Functions -------------
 function showModal(title, message) {
   const modal = $(".modal");
@@ -274,6 +277,62 @@ function disableAudio() {
 
     // 5. Mark the mic button as inactive.
     $("#mic-btn").removeClass("active");
+}
+
+async function shareScreen(){
+  try{
+    const screenStream = await navigator.mediaDevices.getDisplayMedia( { video: true } );
+
+    screenTrack = screenStream.getVideoTracks()[0];
+    screenTrack.contentHint = "detail";
+    addTrackToPeer(screenTrack, screenStream);
+
+    const pinnedVideo = document.getElementById("vid-pinned-video");
+    pinnedVideo.srcObject = screenStream;
+    pinnedVideo.play();
+    $("#vid-pinned-overlay").fadeOut();
+
+    isScreenSharing = true;
+    $("#screen-btn").addClass("active");
+
+    screenTrack.onended = () => stopScreenShare();
+    console.log("SCREEN: Screen sharing started");
+  }
+  catch (e) {
+    console.error(`Error Occured: ${e}`);
+  }
+}
+
+function stopScreenShare() {
+    if (!screenTrack) return; // guard: already stopped (prevents double-call from onended)
+
+    // 1. Stop the OS screen capture. The track is permanently ended after this.
+    screenTrack.stop();
+
+    // 2. Remove it from all peer connections so peers stop receiving it
+    removeTrackFromPeer(screenTrack);
+
+    // 3. Clear our reference
+    screenTrack = null;
+
+    // 4. Restore the pinned slot to your local camera (or overlay if camera is off)
+    const pinnedVideo   = document.getElementById("vid-pinned-video");
+    const pinnedOverlay = document.getElementById("vid-pinned-overlay");
+
+    if (localStream && localStream.getVideoTracks()[0]?.readyState === "live") {
+        pinnedVideo.srcObject = localStream;
+        pinnedVideo.play();
+        pinnedOverlay.style.display = "none";
+    } else {
+        pinnedVideo.srcObject = null;
+        pinnedOverlay.style.display = "flex";
+    }
+
+    // 5. Update button and flag
+    isScreenSharing = false;
+    $("#screen-btn").removeClass("active");
+
+    console.log("SCREEN: Screen sharing stopped");
 }
 
 function displayChatMessage(data){
@@ -617,7 +676,13 @@ $(document).ready(function () {
     }
   });
 
-
+  $("#screen-btn").on("click", async function () {
+      if (!isScreenSharing) {
+          await shareScreen();
+      } else {
+          stopScreenShare();
+      }
+  });
   // When user closes tab, call handleUserLeft() to clear connections.
   $(window).on("beforeunload", function() {
       handleUserLeft();
