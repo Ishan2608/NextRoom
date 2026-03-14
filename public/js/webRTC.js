@@ -368,5 +368,14 @@ socket.on("chat-message", (data)=>{
 // EXPORTS
 // ============================================================
 
+
+function getUsers() {
+    return users;
+}
+
 // TODO: Export everything that app.js needs to call directly:
-export {setLocalStream, setMeetCode, joinRoom, createPC, sendChatMessage, addTrackToPeer, removeTrackFromPeer, handleUserLeft};
+export {
+  setLocalStream, setMeetCode, 
+  joinRoom, createPC, sendChatMessage, addTrackToPeer, removeTrackFromPeer, handleUserLeft,
+  getUsers
+};

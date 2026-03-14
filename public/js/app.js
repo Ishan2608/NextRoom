@@ -5,7 +5,11 @@ from 1st line to last, re-initializing the global variables. To maintain state:
 - We create a method, that is run automatically on each page load, setting global variable values.
 */
 
-import {setLocalStream, setMeetCode, joinRoom, sendChatMessage, addTrackToPeer, removeTrackFromPeer, handleUserLeft} from './webRTC.js';
+import {
+  setLocalStream, setMeetCode, 
+  joinRoom, sendChatMessage, addTrackToPeer, removeTrackFromPeer, handleUserLeft,
+  getUsers
+} from './webRTC.js';
 
 // GLOBAL VARIABLES
 var USER = {};
@@ -291,6 +295,53 @@ function displayChatMessage(data){
 // Make it accessible to webRTC.js
 window.displayChatMessage = displayChatMessage;
 
+function showParticipantsModal() {
+    const usersMap = getUsers();
+    const list     = document.getElementById("participants-list");
+
+    // Clear previous content so stale rows don't appear if modal is reopened
+    list.innerHTML = "";
+
+    usersMap.forEach((user) => {
+        const isMe     = user.userId === USER.id;
+        const initials = getUserInitials(user.username);
+
+        const row = `
+            <div style="display:flex; align-items:center; gap:12px;
+                        padding:10px 12px; border-radius:8px;
+                        background:rgba(255,255,255,0.05);">
+
+                <div style="width:40px; height:40px; border-radius:50%;
+                            background:#6c63ff; flex-shrink:0;
+                            display:flex; align-items:center; justify-content:center;
+                            font-size:14px; font-weight:600; color:#fff;">
+                    ${initials}
+                </div>
+
+                <div style="overflow:hidden;">
+                    <div style="font-size:14px; font-weight:500; white-space:nowrap;
+                                overflow:hidden; text-overflow:ellipsis;">
+                        ${user.username}
+                        ${isMe ? '<span style="font-size:11px; opacity:0.5; margin-left:4px;">(you)</span>' : ''}
+                    </div>
+                    <div style="font-size:12px; opacity:0.55; white-space:nowrap;
+                                overflow:hidden; text-overflow:ellipsis;">
+                        ${user.email}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        list.innerHTML += row;
+    });
+
+    // Show participant count in the title
+    document.getElementById("participants-modal-title").textContent = `In this call (${usersMap.size})`;
+
+    $(".participants-modal").show();
+    $(".participants-modal-overlay").show();
+}
+
 // When Page is Loaded and JS is ready to run.
 $(document).ready(function () {
   
@@ -483,8 +534,6 @@ $(document).ready(function () {
 
   // There are two Leav Call Buttons. When User clicks on either of them,
   $(".leave-call-btn, button#hangup-btn").on("click", function () {
-    // disconnect socket and WebRTC connection...
-    
     // Stop all active tracks before leaving to release hardware.
     if (localStream) {
       localStream.getTracks().forEach(track => track.stop());
@@ -495,6 +544,23 @@ $(document).ready(function () {
     setMeetCode(MEETCODE);
     handleUserLeft();
     window.location.href = "/";
+  });
+
+  // Three-dot menu button → open the participants modal
+  $("#menu-btn").on("click", function () {
+      showParticipantsModal();
+  });
+
+  // ✕ button inside the modal → close it
+  $("#close-participants-modal").on("click", function () {
+      $(".participants-modal").hide();
+      $(".participants-modal-overlay").hide();
+  });
+
+  // Clicking the dark backdrop → also close
+  $(".participants-modal-overlay").on("click", function () {
+      $(".participants-modal").hide();
+      $(this).hide();
   });
 
   let sendBtn = $("#chat-input-container button");
