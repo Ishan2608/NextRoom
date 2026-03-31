@@ -5,8 +5,8 @@
 /*
 rooms = Map {
     "<meetCode>" => Map {
-        "socket-id-abc" => { userId, username, email, socketId },
-        "socket-id-xyz" => { userId, username, email, socketId }
+        "socket-id-abc" => { id, username, email, socketId },
+        "socket-id-xyz" => { id, username, email, socketId }
     }
 }
 
@@ -51,7 +51,7 @@ function initSocket(io) {
         // ----------------------------------------------------------
 
         // TODO: Listen for "join-room" on this socket.
-        socket.on("join-room", ({ meetCode, userId, username, email }) => {
+        socket.on("join-room", ({ meetCode, id, username, email }) => {
             // Put socket into the socket.io room.
             socket.join(meetCode); // this puts the socket into a named room.
 
@@ -62,22 +62,22 @@ function initSocket(io) {
 
             // Register this user in the inner Map.
             const room = rooms.get(meetCode);
-            room.set(socket.id, {userId: userId, username: username, email: email, socketId: socket.id});
+            room.set(socket.id, {id: id, username: username, email: email, socketId: socket.id});
 
             const participants = Array.from(room.values()); // Get list of all participants of this room
             const thisUserID = socket.id; // Stored ID of this user, joining in separately.
             // Get list of all users except this one.
             const others = participants.filter((user) => user.socketId !== thisUserID);
-            // others = [{userId: , username: , email: , socketId: }, ...]
+            // others = [{id: , username: , email: , socketId: }, ...]
 
             // SEND THIS LIST OF OTHER PARTICIPANTS TO THIS USER to update his UI.
             socket.emit("get-others", others);
 
-            console.log(`SOCKET:ON:JOIN-ROOM | user=${username} (id=${userId}) joined room=${meetCode}`);
+            console.log(`SOCKET:ON:JOIN-ROOM | user=${username} (id=${id}) joined room=${meetCode}`);
             console.log(`SOCKET:ON:JOIN-ROOM | current users in room=${meetCode}:`, getUsersInRoom(meetCode));
 
             // Notify all OTHER sockets in that room that someone arrived.
-            socket.to(meetCode).emit("user-joined", {userId: userId, username: username, email: email, socketId: socket.id});
+            socket.to(meetCode).emit("user-joined", {id: id, username: username, email: email, socketId: socket.id});
             console.log(`SOCKET-EVENT:EMIT:USER-JOINED: User = ${username} joining Meet Code = ${meetCode}`);
         }); // <- Closing of: socket.on("join-room")
 
@@ -99,7 +99,7 @@ function initSocket(io) {
 
             // Notify Other users:
             socket.to(meetCode).emit("user-left", {
-                userId: user?.userId,
+                id: user?.id,
                 username: user?.username,
                 email: user?.email,
                 socketId: socket.id
@@ -110,19 +110,19 @@ function initSocket(io) {
         }); // <- Closing of: socket.on("leave-room")
 
         // Send chat messages from user to user.
-            socket.on("chat-message", ({ meetCode, message, userId, timestamp }) => {
-                const room = getRoom(meetCode);
-                const user = room?.get(socket.id);        
+        socket.on("chat-message", ({ meetCode, message, id, timestamp }) => {
+            const room = getRoom(meetCode);
+            const user = room?.get(socket.id);        
 
-                if (!user) return;
-                
-                // Broadcast to everyone in the room
-                io.to(meetCode).emit("chat-message", { 
-                    sender: user, 
-                    message: message, 
-                    timestamp: timestamp || Date.now() 
-                });
-            }); // <- Closing of: socket.on("chat-message")
+            if (!user) return;
+            
+            // Broadcast to everyone in the room
+            io.to(meetCode).emit("chat-message", { 
+                sender: user, 
+                message: message, 
+                timestamp: timestamp || Date.now() 
+            });
+        }); // <- Closing of: socket.on("chat-message")
 
         // ----------------------------------------------------------
         // SIGNALLING EVENTS (WebRTC handshake, server just forwards these)
@@ -178,7 +178,7 @@ function initSocket(io) {
 
                 // notify others if room is not empty:
                 socket.to(meetCode).emit("user-left", {
-                    userId: user?.userId,
+                    id: user?.id,
                     username: user?.username,
                     email: user?.email,
                     socketId: socket.id
