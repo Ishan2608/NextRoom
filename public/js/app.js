@@ -6,6 +6,11 @@ from 1st line to last, re-initializing the global variables. To maintain state:
 */
 
 import {
+    showModal, getUserInitials, 
+    generateMeetCode, validateCode, getURLParameter
+} from './utils.js'
+
+import {
   setLocalStream, setMeetCode, 
   joinRoom, sendChatMessage, addTrackToPeer, removeTrackFromPeer, handleUserLeft,
   getUsers
@@ -67,6 +72,20 @@ function getURLParameter(name) {
   return params.get(name);
 }
 
+/**
+  * Synchronizes authentication state across pages.
+*/
+function syncState(){
+    // Fetch user details from local storage kept at time of login and signup.
+    const user = JSON.parse(localStorage.getItem("user"));
+
+    // If found a user, set global variables shared accross files.
+    if (user){
+        window.__USER = user;
+        window.__ISLOGGED = true;
+        window.__USER_INITS = getUserInitials(window.__USER.username);
+    }
+}
 
 //  ----------------- MANAGE GLOBAL VARIABLE VALUES ----------------- 
 function syncState(){
