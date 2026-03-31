@@ -143,10 +143,22 @@ $(document).ready(function (){
         $("#send-chat-msg-btn").on("click", ()=> {
             const inputElement = $("#chat-msg");
             const msg = inputElement.val();
-            if (msg.trim() === ""){
-                inputElement.focus();
-            } else {
+            if (msg.trim() === "") inputElement.focus();
+            else {
                 sendMessage(msg.trim());
+                inputElement.val("");
+            }
+        });
+
+        $("#chat-msg").on("keydown", (event)=>{
+            const inputElement = $("#chat-msg");
+            if(event.key === "Enter"){
+                const msg = inputElement.val().trim();
+                if (msg === "") inputElement.focus();
+                else {
+                    sendMessage(msg.trim());
+                    inputElement.val("");
+                }
             }
         });
 
