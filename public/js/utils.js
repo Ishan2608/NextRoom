@@ -56,3 +56,4 @@ function syncState(){
         window.__USER_INITS = getUserInitials(window.__USER.username);
     }
 }
+

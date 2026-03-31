@@ -9,7 +9,11 @@
 import {
     showModal, getUserInitials, 
     generateMeetCode, validateCode, getURLParameter
-} from './utils.js'
+} from './utils.js';
+
+import {
+    userMap, joinRoom
+} from './rtc.js';
 
 /**
   * Synchronizes authentication state across pages.
@@ -36,14 +40,55 @@ $(document).ready(function (){
     // --------------------------------------------------------------------------
     if (path === "/") { 
         // On Home Page.
+
+        // If user is logged in,
         if (window.__ISLOGGED){
+            // Convert Sign In to Sign Out.
             $("#signin-btn").text("Sign Out").attr("href", "#").attr("id", "signout-btn");
+            // Set Profile Picture.
             $("#profile-pic").text(window.__USER_INITS);
         } else {
+            // Convert Sign Out to Sign In.
             $("#signout-btn").text("Sign In").attr("href", "/auth").attr("id", "signin-btn");
         }
 
-        
+        // REGISTER EVENT LISTENERS
+        $(".new-meet-btn").on("click", ()=>{
+            if (!window.__ISLOGGED){
+                title = "Unauthorized Action";
+                message = "Please Sign In or Sign Up to be able to attend a meeting.";
+                showModal(title, message);
+            } else {
+                const meetCode = generateMeetCode();
+                window.location.href = `/room?meetID=${meetCode}`;
+            }
+        });
+
+        $("#join-btn").on("click", ()=>{
+            const codeInput = $("#code-input");
+            const code = codeInput.val();
+            if (code === ""){
+                codeInput.focus();
+                codeInput.css("border", "2px solid var(--danger");
+            }
+            const valid = validateCode(code);
+            if (!valid){
+                title = "Invalid Code";
+                msg = "Enter a valid 6 digit Code";
+                showModal(msg);
+            } else {
+                window.location.href = `/room?meetID=${code}`;
+            }
+        });
+
+        $("#signout-btn").on("click", ()=>{
+            localStorage.clear();
+            window.__USER = {};
+            window.__USER_INITS = "";
+            window.__ISLOGGED = false;
+            window.__MEETCODE = 0;
+            window.location.href = "/";
+        });
     }
 
     // --------------------------------------------------------------------------
@@ -58,6 +103,9 @@ $(document).ready(function (){
             window.__MEETCODE = getURLParameter("meetID");
             $("#profile-pic").text(window.__USER_INITS);
             $("#nav-meet-code").text(window.__MEETCODE);
+            
+            // Create WebRTC Connection.
+            joinRoom();
         }
     } 
     // --------------------------------------------------------------------------
