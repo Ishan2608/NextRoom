@@ -68,9 +68,57 @@ function removeParticipantFromUI(socketId) {
     $(`[data-rendered-socket="${socketId}"]`).remove();
 }
 
+function showParticipantsModal(userMap) {
+    if (userMap.size <=1) {
+        return showModal("All Alone", "You are the only one in this room");
+    }
+    const users = userMap.values();
+    const list = document.getElementById("participants-list");
+    let allRows = ``;
+    // Clear previous content so stale rows don't appear if modal is reopened
+    list.innerHTML = "";
+
+    users.forEach((user) => {
+        const isMe = user.id === USER.id;
+        const initials = getUserInitials(user.username);
+        const row = `
+            <div style="display:flex; align-items:center; gap:12px;
+                        padding:10px 12px; border-radius:8px;
+                        background:rgba(255,255,255,0.05);">
+
+                <div style="width:40px; height:40px; border-radius:50%;
+                            background:#6c63ff; flex-shrink:0;
+                            display:flex; align-items:center; justify-content:center;
+                            font-size:14px; font-weight:600; color:#fff;">
+                    ${initials}
+                </div>
+
+                <div style="overflow:hidden;">
+                    <div style="font-size:14px; font-weight:500; white-space:nowrap;
+                                overflow:hidden; text-overflow:ellipsis;">
+                        ${user.username}
+                        ${isMe ? '<span style="font-size:11px; opacity:0.5; margin-left:4px;">(you)</span>' : ''}
+                    </div>
+                    <div style="font-size:12px; opacity:0.55; white-space:nowrap;
+                                overflow:hidden; text-overflow:ellipsis;">
+                        ${user.email}
+                    </div>
+                </div>
+            </div>
+        `;
+        allRows += row;
+    });
+    list.innerHTML = allRows;
+    // Show participant count in the title
+    document.getElementById("participants-modal-title").textContent = `In this call (${userMap.size})`;
+
+    $(".participants-modal").show();
+    $(".participants-modal-overlay").show();
+}
+
 function displayChatMessage(data){
   const chatCont = $("#chat-interface-body");
-  const isMe = data.sender.id === USER.id;
+  const isMe = data.sender.id === window.__USER.id;
   const bubbleClass = isMe ? "sent-by-me": "sent-by-other";
 
   const msgHTML = `
@@ -85,10 +133,17 @@ function displayChatMessage(data){
   chatCont.scrollTop(chatCont[0].scrollHeight);
 }
 
+
+function toggleAudio(){}
+
+function toggleVideo(){}
+
+function toggleScreen(){}
+
 export {
     showModal, getUserInitials, 
     generateMeetCode, validateCode, getURLParameter,
-    addParticipantToUI, removeParticipantFromUI, 
+    addParticipantToUI, removeParticipantFromUI, showParticipantsModal,
     displayChatMessage,
     toggleAudio, toggleVideo, toggleScreen
 };

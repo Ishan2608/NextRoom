@@ -1,8 +1,14 @@
+/*
+    - Since main.js imports it and that file is imported into html as module, 
+    this code runs automatically when any page is loaded.
+    - Handles Communication with Signaling Server and Established Peer 2 Peer Connection.
+*/
 
 import { 
     addParticipantToUI, removeParticipantFromUI,
     displayChatMessage
 } from './utils.js';
+
 import { io } from "https://cdn.socket.io/4.8.1/socket.io.esm.min.js";
 
 const socket = io();
@@ -13,13 +19,22 @@ const socket = io();
  * pcMap -> Contains PC Object formed with each remote user.
 */
 
-var userMap = {};
-var pcMap = {};
+var userMap = new Map();
+var pcMap = new Map();
 
 const iceConfig = {
   iceServers: [ {urls: 'stun:stun.l.google.com:19302'} ]
 }
 
+/**
+  * Called when this user visits the `/room?meetID=` route.
+  * Signals server through emit:join-room  to let server know it needs to be added to a room.
+  * Server emits user-joined to other users in the room, if any, informing them about this user.
+  * They read on:user-joined and create a new PC object in pcMap for this user.
+  * The server also emits get-others to this user, returning list of other users if any.
+  * Then this user adds each one to his userMap, and creates a PC object for each one.
+  * Then this user sends offer to each one of them.
+*/
 function joinRoom(){
     console.log(`SOCKET:EMIT:JOIN-ROOM`);
     const {id, username, email} = window.__USER;
@@ -32,6 +47,11 @@ function joinRoom(){
     socket.emit("join-room", {meetCode: window.__MEETCODE, id: id, username: username, email: email});
 }
 
+/**
+  * Create a PC Object using default configs.
+  * Adds the PC object to PC Map, mapping to a remote user.
+  * Defines each event listerner of PC Object.
+*/
 function createPC(remoteUser){
     // Create a new WebRTC object, for remote user.
     const pc = new RTCPeerConnection(iceConfig);
@@ -67,9 +87,19 @@ function createPC(remoteUser){
     pc.oniceconnectionstatechange = () => {
         if (pc.iceConnectionState === "failed") pc.restartIce();
     };
+
+    // Send existing streams so that newly joined user can see shared tracks if any.
     return pc;
 }
 
+/**
+  * Called when we read other users list in on:get-others, to send each one an offer.
+  * Also called when pc.onnegotiationneeded is triggered.
+  * Reads already created PC object for remote user. Creates offer. Saves in localDescription.
+  * Emits the offer to signaling server.
+  * The server reads it and just emits offer to other users.
+  * They in their frontend, listen to on:offer and then create answer.
+*/
 async function sendOfferTo(remoteUser, pc) {
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
@@ -77,22 +107,27 @@ async function sendOfferTo(remoteUser, pc) {
     socket.emit("offer", { 
         offer: offer, 
         targetSocketId: remoteUser.socketId, 
-        senderUser: window.__USER 
+        senderUser: {...window.__USER, socketId: socket.id}
     });
 }
 
+/**
+  * Automatically runs when frontend connects with backend for the first time. 
+  * The socket ID used here is also the one server uses. This is unique to identify each frontend.
+*/
 socket.on("connect", ()=>{
-    // Add Socket ID to THIS user's global object.'
-    window.__USER = {...window.__USER, socketId: socket.id};
     console.log(`SOCKET:ON:CONNECT: Connected with Socket ID = ${socket.id}`);
 });
 
+/**
+  * Runs automatically when frontend loses connection with backend, or user just closes the app.
+*/
 socket.on("disconnect", ()=>{
-    window.__USER = {...window.__USER, socketId: null};
     console.log(`SOCKET:ON:CONNECT: Disconnected from Socket ID = ${socket.id}`);
 });
 
-/** When you join a room, you get list of participants already in it.
+/** 
+  * When you join a room, you get list of participants already in it. Save each user and send offer to each one.
   * @param others (Array) = [{id: , username: , email: , socketId: }, ...]
 */
 socket.on("get-others", (others)=>{
@@ -112,7 +147,9 @@ socket.on("get-others", (others)=>{
     }
 });
 
-/** When a new user joins the room, you are informed about him.
+/** 
+  * When a new user joins the room, you are informed about him. 
+  Create a PC object mapped to it. This newly joined user will send you an offer.
   * @param remoteUserData (Object) = {id:, username:, email:, socketId:}
 */
 socket.on('user-joined', (remoteUserData)=>{
@@ -149,6 +186,22 @@ socket.on("user-left", (remoteUserData)=>{
 });
 
 /**
+  * @param data (Object) = { meetCode, message, id, timestamp }
+*/
+function sendMessage(messageText){
+    const date = new Date(Date.now());
+    const localDate = date.toLocaleString('en-IN');
+    
+    socket.emit("chat-message", {
+        meetCode: window.__MEETCODE,
+        message: messageText,
+        id: window.__USER.id,
+        timestamp: localDate
+    });
+}
+
+
+/**
   * When Some other User Sends Message
   * @param data (Object) = {sender: user, message: message, timestamp: timestamp }
 */
@@ -168,7 +221,7 @@ socket.on("chat-message", (data)=>{
   * @param offer (SDP Object)
   * @param senderUser (Object) = {id, username, email, socketId} 
 */
-socket.on("offer", ({offer, senderUser})=>{
+socket.on("offer", async ({offer, senderUser})=>{
     const {id, username, email, socketId} = senderUser;
     console.log(`SOCKET:ON:OFFER: From ${username}`);
     
@@ -185,7 +238,7 @@ socket.on("offer", ({offer, senderUser})=>{
     socket.emit("answer", {
         answer: answer, 
         targetSocketId: socketId, 
-        senderUser: window.__USER
+        senderUser: {...window.__USER, socketId: socket.id}
     });
 });
 
@@ -194,7 +247,7 @@ socket.on("offer", ({offer, senderUser})=>{
   * @param answer (SDP Object)
   * @param senderUser (Object) = {id, username, email, socketId} 
 */
-socket.on("answer", ({answer, senderUser})=>{
+socket.on("answer", async ({answer, senderUser})=>{
     const {id, username, email, socketId} = senderUser;
     console.log(`SOCKET:ON:ANSWER: From ${username}`);
     // You created a map entry for this user in get-others.
@@ -211,7 +264,7 @@ socket.on("answer", ({answer, senderUser})=>{
   * @param senderUser (Object) = {id, username, email, socketId}
 */
 
-socket.on("ice-candidate", ({candidate, senderUser})=>{
+socket.on("ice-candidate", async ({candidate, senderUser})=>{
     const {id, username, email, socketId} = senderUser;
     console.log(`SOCKET:ON:ICE-CANDIDATE: From ${username}`);
     
@@ -236,7 +289,9 @@ socket.on("signal", (signal)=>{
     console.log(`SOCKET:ON:SIGNAL: From ${username}`);
 });
 
-
+/**
+  * Clears HashMaps and tracks. Runs when user just closes tab instead of properly clicking leave button.
+*/
 function handleUserLeft(){
     console.log("RTC:CLEANUP: Cleaning up WebRTC and Socket State...");
     pcMap.forEach((pc, socketId) => {
@@ -252,7 +307,7 @@ function handleUserLeft(){
         console.log("RTC:CLEANUP | Local media tracks stopped");
     }
     userMap.clear();
-    currentMeetCode = null;
+    window.__MEETCODE = null;
 
     if (socket.connected) {
         socket.disconnect();
@@ -260,5 +315,5 @@ function handleUserLeft(){
 }
 
 export {
-    userMap, joinRoom, handleUserLeft
+    userMap, joinRoom, handleUserLeft, sendMessage
 }

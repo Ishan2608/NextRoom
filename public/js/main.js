@@ -8,11 +8,12 @@
 
 import {
     showModal, getUserInitials, 
-    generateMeetCode, validateCode, getURLParameter
+    generateMeetCode, validateCode, getURLParameter,
+    showParticipantsModal
 } from './utils.js';
 
 import {
-    userMap, joinRoom, handleUserLeft
+    userMap, joinRoom, handleUserLeft, sendMessage
 } from './rtc.js';
 
 /**
@@ -32,52 +33,6 @@ function syncState(){
         window.__ISLOGGED = false;
         window.__USER_INITS = null;
     }
-}
-
-function showParticipantsModal() {
-    const users = userMap.values();
-    const list = document.getElementById("participants-list");
-    
-    // Clear previous content so stale rows don't appear if modal is reopened
-    list.innerHTML = "";
-
-    users.forEach((user) => {
-        const isMe = user.id === USER.id;
-        const initials = getUserInitials(user.username);
-        let allRows = ``;
-        const row = `
-            <div style="display:flex; align-items:center; gap:12px;
-                        padding:10px 12px; border-radius:8px;
-                        background:rgba(255,255,255,0.05);">
-
-                <div style="width:40px; height:40px; border-radius:50%;
-                            background:#6c63ff; flex-shrink:0;
-                            display:flex; align-items:center; justify-content:center;
-                            font-size:14px; font-weight:600; color:#fff;">
-                    ${initials}
-                </div>
-
-                <div style="overflow:hidden;">
-                    <div style="font-size:14px; font-weight:500; white-space:nowrap;
-                                overflow:hidden; text-overflow:ellipsis;">
-                        ${user.username}
-                        ${isMe ? '<span style="font-size:11px; opacity:0.5; margin-left:4px;">(you)</span>' : ''}
-                    </div>
-                    <div style="font-size:12px; opacity:0.55; white-space:nowrap;
-                                overflow:hidden; text-overflow:ellipsis;">
-                        ${user.email}
-                    </div>
-                </div>
-            </div>
-        `;
-        allRows += row;
-    });
-    list.innerHTML = allRows;
-    // Show participant count in the title
-    document.getElementById("participants-modal-title").textContent = `In this call (${usersMap.size})`;
-
-    $(".participants-modal").show();
-    $(".participants-modal-overlay").show();
 }
 
 $(document).ready(function (){
@@ -100,6 +55,7 @@ $(document).ready(function (){
         } else {
             // Convert Sign Out to Sign In.
             $("#signout-btn").text("Sign In").attr("href", "/auth").attr("id", "signin-btn");
+            $("#profile-pic").hide();
         }
 
         // REGISTER EVENT LISTENERS
@@ -115,22 +71,32 @@ $(document).ready(function (){
         });
 
         $("#join-btn").on("click", ()=>{
+            if (!window.__ISLOGGED){
+                let title = "Unauthorized Acces";
+                let msg = "Please login to be able to join a meeting";
+                return showModal(title, msg);
+            }
             const codeInput = $("#code-input");
             const code = codeInput.val();
             if (code === ""){
                 codeInput.focus();
                 codeInput.css("border", "2px solid var(--danger");
-            }
-            const valid = validateCode(code);
-            if (!valid){
-                title = "Invalid Code";
-                msg = "Enter a valid 6 digit Code";
-                showModal(msg);
             } else {
-                window.location.href = `/room?meetID=${code}`;
+                const valid = validateCode(code);
+                if (!valid){
+                    let title = "Invalid Code";
+                    let msg = "Enter a valid 6 digit Code";
+                    showModal(msg);
+                } else {
+                    window.location.href = `/room?meetID=${code}`;
+                }
             }
         });
 
+        $("#signin-btn").on("click", ()=>{
+            window.location.href = "/auth";
+        });
+        
         $("#signout-btn").on("click", ()=>{
             localStorage.clear();
             window.__USER = {};
@@ -149,39 +115,47 @@ $(document).ready(function (){
         
         // If not logged in, not allowed on rooms page, send back to home.
         if (!window.__ISLOGGED) return window.location.href="/";
-        else {
-            window.__MEETCODE = getURLParameter("meetID");
-            $("#profile-pic").text(window.__USER_INITS);
-            $("#nav-meet-code").text(window.__MEETCODE);
-            
-            // Create WebRTC Connection.
-            joinRoom();
-        }
+        
+        window.__MEETCODE = getURLParameter("meetID");
+        console.log(window.__MEETCODE);
+        $("#profile-pic").text(window.__USER_INITS);
+        $("#nav-meet-code").text(window.__MEETCODE);
+        $("#vid-pinned-overlay-profile").text(window.__USER_INITS);
+        $("#vid-pinned-overlay-name").text(window.__USER.username);
+        // Create WebRTC Connection.
+        joinRoom();
+        
 
         // When User Clicks on Share Link Button.
         $(".share-link-btn").on("click", function () {
             navigator.clipboard.writeText(window.__MEETCODE).then(() => {
                 const title = "Meeting Link Copied";
-                const body = `Meeting Link = <strong>${window.__MEETCODE}</strong> has been copied to Clipboard`;
+                const body = `Meeting Link = ${window.__MEETCODE} has been copied to Clipboard`;
                 showModal(title, body);
             });
         });
         
-        $(".leave-call-btn, button#hangup-btn", ()=>{
-            window.__MEETCODE = 0;
-            if(window.__LOCALSTREAM){
-                window.__LOCALSTREAM.getTracks().forEach(track => track.stop());
-                window.__LOCALSTREAM = null;
-                window.__MEETCODE = 0;
-                handleUserLeft();
-                window.location.href = "/";
+        $(".leave-call-btn, button#hangup-btn").on("click", ()=>{
+            handleUserLeft();
+            window.location.href = "/";
+        });
+
+        $("#send-chat-msg-btn").on("click", ()=> {
+            const inputElement = $("#chat-msg");
+            const msg = inputElement.val();
+            if (msg.trim() === ""){
+                inputElement.focus();
+            } else {
+                sendMessage(msg.trim());
             }
         });
 
         $("#mic-btn").on("click", ()=>{});
         $("#video-btn").on("click", ()=>{});
         $("#screen-btn").on("click", ()=>{});
-        $("#menu-btn").on("click", ()=>{});
+        $("#menu-btn").on("click", ()=>{
+            showParticipantsModal(userMap);
+        });
 
     } 
     // --------------------------------------------------------------------------
@@ -242,28 +216,30 @@ $(document).ready(function (){
                 success: function (res) {
                     // If server response success.
                     if (res.success){
-                    // Store returned user in localStorage.
-                    localStorage.setItem("user", JSON.stringify(res.user));
+                        // Store returned user in localStorage.
+                        localStorage.setItem("user", JSON.stringify(res.user));
 
-                    // Set Global Variables.
-                    USER = res.user;
-                    ISLOGGED = true;
+                        // Set Global Variables.
+                        window.__USER = res.user;
+                        window.__ISLOGGED = true;
 
-                    // Redirect to Home Page.
-                    window.location.href = "/";
+                        // Redirect to Home Page.
+                        window.location.href = "/";
                     }
                 },
                 error: function (xhr) {
                     console.error(`Error During Auth = ${xhr.statusText}`);
                     return showModal("Error", `${xhr.statusText}`);
                 },
-                });
             });
+        });
         
     }
     
     else if (path.includes("/health")){
         // API Check.
+        window.location.href = "/";
+        return;
     }
     
     else {
