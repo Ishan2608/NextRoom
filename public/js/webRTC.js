@@ -102,16 +102,16 @@ function removeParticipantFromUI(socketId) {
 // SECTION 3: JOIN ROOM
 // ============================================================
 
-function joinRoom(meetCode, userId, username, email){
-  users.set(socket.id, {userId: userId, username: username, email: email, socketId: socket.id});
+function joinRoom(meetCode, id, username, email){
+  users.set(socket.id, {id: id, username: username, email: email, socketId: socket.id});
 
   $("#vid-pinned-overlay-profile").text(getUserInitials(username));
   $("#vid-pinned-overlay-name").text(username);
 
   const executeJoin = () => {
-    users.set(socket.id, { userId, username, email, socketId: socket.id });
-    socket.emit("join-room", { meetCode, userId, username, email });
-    console.log(`SOCKET:EMIT:JOIN-ROOM | user=${username} (id=${userId}) joining room=${meetCode}`);
+    users.set(socket.id, { id, username, email, socketId: socket.id });
+    socket.emit("join-room", { meetCode, id, username, email });
+    console.log(`SOCKET:EMIT:JOIN-ROOM | user=${username} (id=${id}) joining room=${meetCode}`);
   };
 
   if (socket.connected) {
@@ -121,16 +121,16 @@ function joinRoom(meetCode, userId, username, email){
   }
 }
 
-socket.on("user-joined", ({ userId, username, email, socketId }) => {
-  console.log(`SOCKET:ON:USER-JOINED | New user=${username} (id=${userId}) with socketId=${socketId} joined`);
-  users.set(socketId, {userId, username, email, socketId});
-  const userData = {userId, username, email, socketId};
+socket.on("user-joined", ({ id, username, email, socketId }) => {
+  console.log(`SOCKET:ON:USER-JOINED | New user=${username} (id=${id}) with socketId=${socketId} joined`);
+  users.set(socketId, {id, username, email, socketId});
+  const userData = {id, username, email, socketId};
   addParticipantToUI(userData);
   createOffer(userData);
 });
 
-socket.on("user-left", ({ userId, username, email, socketId }) => {
-  console.log(`SOCKET:ON:USER-LEFT | user=${username} (id=${userId}) socketId=${socketId}`);
+socket.on("user-left", ({ id, username, email, socketId }) => {
+  console.log(`SOCKET:ON:USER-LEFT | user=${username} (id=${id}) socketId=${socketId}`);
   users.delete(socketId);
 
   // If this user was pinned to the main slot, clear that slot before removal
@@ -478,10 +478,10 @@ function handleUserLeft(){
 // SECTION 8: CHAT MESSAGES
 // ============================================================
 
-function sendChatMessage(meetCode, userId, message){
+function sendChatMessage(meetCode, id, message){
   if (!message.trim()) return;
-  socket.emit("chat-message", {meetCode, userId, message, timestamp: Date.now()});
-  console.log(`SOCKET:EMIT:CHAT-MESSAGE: ${userId} sends message: ${message}`);
+  socket.emit("chat-message", {meetCode, id, message, timestamp: Date.now()});
+  console.log(`SOCKET:EMIT:CHAT-MESSAGE: ${id} sends message: ${message}`);
 }
 
 socket.on("chat-message", (data) => {

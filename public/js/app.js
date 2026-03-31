@@ -335,7 +335,7 @@ function stopScreenShare() {
 
 function displayChatMessage(data){
   const chatCont = $("#chat-interface-body");
-  const isMe = data.sender.userId === USER.id;
+  const isMe = data.sender.id === USER.id;
   const bubbleClass = isMe ? "sent-by-me": "sent-by-other";
 
   const msgHTML = `
@@ -360,7 +360,7 @@ function showParticipantsModal() {
     list.innerHTML = "";
 
     usersMap.forEach((user) => {
-        const isMe     = user.userId === USER.id;
+        const isMe     = user.id === USER.id;
         const initials = getUserInitials(user.username);
 
         const row = `
