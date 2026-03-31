@@ -1,0 +1,1291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>WebRTC Guide</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg:#0a0c10;--surface:#0f1217;--surface2:#161b24;--border:#1e2530;--border2:#252d3a;
+    --accent:#3b82f6;--accent2:#60a5fa;--green:#22c55e;--orange:#f97316;--purple:#a78bfa;
+    --red:#f87171;--yellow:#facc15;--text:#e2e8f0;--text2:#94a3b8;--text3:#475569;
+    --mono:'JetBrains Mono',monospace;--sans:'DM Sans',sans-serif;--display:'Syne',sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{scroll-behavior:smooth;}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.7;}
+  ::-webkit-scrollbar{width:6px;}
+  ::-webkit-scrollbar-track{background:var(--bg);}
+  ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+  #sidebar{position:fixed;top:0;left:0;width:240px;height:100vh;background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;z-index:50;padding:28px 0 40px;}
+  #sidebar .logo{font-family:var(--display);font-size:18px;font-weight:800;padding:0 20px 24px;border-bottom:1px solid var(--border);margin-bottom:20px;letter-spacing:-0.5px;}
+  #sidebar .logo span{color:var(--accent2);}
+  #sidebar nav a{display:block;padding:7px 20px;font-size:12.5px;color:var(--text2);text-decoration:none;font-family:var(--sans);transition:color .15s,background .15s;border-left:2px solid transparent;line-height:1.4;}
+  #sidebar nav a:hover{color:var(--text);background:var(--surface2);}
+  #sidebar nav a.active{color:var(--accent2);border-left-color:var(--accent2);background:rgba(59,130,246,.06);}
+  #sidebar .section-label{font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);padding:16px 20px 6px;}
+  #main{margin-left:240px;max-width:900px;padding:60px 60px 120px;}
+  h1{font-family:var(--display);font-size:42px;font-weight:800;line-height:1.15;letter-spacing:-1.5px;color:#fff;margin-bottom:16px;}
+  h2{font-family:var(--display);font-size:26px;font-weight:700;letter-spacing:-0.5px;color:#fff;margin:56px 0 16px;padding-top:8px;}
+  h3{font-family:var(--display);font-size:17px;font-weight:700;color:var(--accent2);margin:32px 0 10px;letter-spacing:-0.2px;}
+  p{color:var(--text2);margin-bottom:14px;}
+  p strong{color:var(--text);font-weight:500;}
+  section{border-bottom:1px solid var(--border);padding-bottom:20px;}
+  .hero-tag{display:inline-block;background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.25);color:var(--accent2);font-family:var(--mono);font-size:11px;letter-spacing:1px;text-transform:uppercase;padding:4px 10px;border-radius:4px;margin-bottom:20px;}
+  .step-box{display:flex;gap:16px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px 22px;margin-bottom:12px;align-items:flex-start;}
+  .step-num{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--bg);background:var(--accent2);min-width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;}
+  .step-content{flex:1;}
+  .step-content strong{color:var(--text);font-size:14px;font-weight:600;display:block;margin-bottom:4px;}
+  .step-content p{color:var(--text2);margin:0;font-size:13.5px;line-height:1.6;}
+  .code-block{background:#090b0e;border:1px solid var(--border);border-radius:10px;margin:16px 0 20px;overflow:hidden;}
+  .code-header{background:var(--surface);border-bottom:1px solid var(--border);padding:8px 16px;display:flex;align-items:center;gap:8px;}
+  .code-header .fname{font-family:var(--mono);font-size:11px;color:var(--text3);}
+  .code-header .lang-badge{margin-left:auto;font-family:var(--mono);font-size:10px;background:rgba(59,130,246,.1);color:var(--accent2);padding:2px 7px;border-radius:3px;border:1px solid rgba(59,130,246,.2);}
+  pre{padding:18px 20px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.75;color:#c9d1d9;}
+  .kw{color:#ff79c6;}.fn{color:#8be9fd;}.str{color:#f1fa8c;}.cm{color:#6272a4;font-style:italic;}.var{color:#bd93f9;}.num{color:#50fa7b;}
+  .ascii-box{background:#090b0e;border:1px solid var(--border2);border-radius:10px;padding:22px 24px;margin:20px 0;overflow-x:auto;}
+  .ascii-box pre{font-family:var(--mono);font-size:12px;line-height:1.65;color:#7dd3fc;padding:0;}
+  .callout{border-radius:8px;padding:14px 18px;margin:18px 0;display:flex;gap:12px;align-items:flex-start;font-size:13.5px;line-height:1.6;}
+  .callout .icon{font-size:16px;flex-shrink:0;margin-top:1px;}
+  .callout p{margin:0;}
+  .callout.info{background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.18);}
+  .callout.info p{color:#93c5fd;}
+  .callout.warn{background:rgba(249,115,22,.07);border:1px solid rgba(249,115,22,.2);}
+  .callout.warn p{color:#fdba74;}
+  .callout.tip{background:rgba(34,197,94,.07);border:1px solid rgba(34,197,94,.18);}
+  .callout.tip p{color:#86efac;}
+  .callout.danger{background:rgba(248,113,113,.07);border:1px solid rgba(248,113,113,.2);}
+  .callout.danger p{color:#fca5a5;}
+  .event-table{width:100%;border-collapse:collapse;margin:16px 0 24px;font-size:13px;}
+  .event-table th{background:var(--surface2);font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text3);padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);}
+  .event-table td{padding:11px 14px;border-bottom:1px solid var(--border);vertical-align:top;color:var(--text2);line-height:1.5;}
+  .event-table tr:last-child td{border-bottom:none;}
+  .event-table tr:hover td{background:rgba(255,255,255,.02);}
+  .badge{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:4px;font-weight:600;}
+  .badge.auto{background:rgba(249,115,22,.1);color:var(--orange);border:1px solid rgba(249,115,22,.2);}
+  code{font-family:var(--mono);font-size:12px;background:rgba(255,255,255,.06);padding:2px 6px;border-radius:4px;color:#f1fa8c;}
+  #progress{position:fixed;top:0;left:0;height:2px;background:var(--accent);transition:width .1s;z-index:100;}
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:16px 0;}
+  .concept-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px 20px;}
+  .concept-card .cc-title{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;}
+  .concept-card p{margin:0;font-size:13.5px;line-height:1.6;}
+  @media(max-width:900px){#sidebar{display:none;}#main{margin-left:0;padding:40px 24px 80px;}}
+  @media(max-width:700px){.two-col{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div id="progress"></div>
+
+<aside id="sidebar">
+  <div class="logo">Web<span>RTC</span> Guide</div>
+  <nav>
+    <div class="section-label">Concepts</div>
+    <a href="#what-is-webrtc">What is WebRTC</a>
+    <a href="#foundations">Foundations</a>
+    <a href="#key-objects">Key Objects</a>
+    <a href="#rtcpeerconnection-api">RTCPeerConnection API</a>
+    <a href="#sdp-ice">SDP and ICE</a>
+    <a href="#signalling">The Signalling Server</a>
+    <a href="#race-conditions">Race Conditions</a>
+
+    <div class="section-label">Connection Flow</div>
+    <a href="#roles">Caller and Callee</a>
+    <a href="#step1">Step 1: Join and Announce</a>
+    <a href="#step2">Step 2: Create RTCPeerConnection</a>
+    <a href="#step3">Step 3: Offer</a>
+    <a href="#step4">Step 4: Answer</a>
+    <a href="#step5">Step 5: ICE Exchange</a>
+    <a href="#step6">Step 6: Media Flows</a>
+
+    <div class="section-label">Multi-User Rooms</div>
+    <a href="#mesh">Mesh Topology</a>
+    <a href="#n-users">N Users Joining</a>
+    <a href="#user-leaves">User Leaving</a>
+
+    <div class="section-label">Track Management</div>
+    <a href="#tracks">Tracks and Streams</a>
+    <a href="#starting-off">Starting With No Tracks</a>
+    <a href="#toggling">Toggling Tracks On/Off</a>
+    <a href="#new-joiner-sees">New Joiner Sees Existing Tracks</a>
+    <a href="#renegotiation">Renegotiation</a>
+  </nav>
+</aside>
+
+<main id="main">
+
+  <section id="what-is-webrtc" style="border-bottom:none;padding-bottom:0;">
+    <div class="hero-tag">Production Guide</div>
+    <h1>WebRTC Guide</h1>
+    <p style="font-size:16px;color:var(--text);line-height:1.75;max-width:680px;">
+      A flow-first guide to building real-time video call applications. This guide teaches the
+      <strong>sequence of events and the mental model</strong> behind WebRTC — not isolated API definitions.
+      It covers multi-user rooms, starting with no active tracks, and toggling audio, video, and screen share mid-call.
+    </p>
+    <div class="callout info" style="margin-top:24px;">
+      <div class="icon">💡</div>
+      <p>Most tutorials only cover one-to-one calls where both users start with camera and mic already on. Real products are more complex: rooms have N users, users join with everything off, and tracks are toggled on and off at any point. This guide addresses all three realities.</p>
+    </div>
+
+    <h3>What WebRTC Is</h3>
+    <p>WebRTC (Web Real-Time Communication) is a browser API that allows two browsers to exchange audio, video, and data <strong>directly with each other</strong> — without routing media through a server. Once two browsers establish a WebRTC connection, all media travels on a direct peer-to-peer channel. The server is only needed during the initial handshake to help two browsers find and describe each other.</p>
+    <p><strong>Simple version:</strong> Two people want to talk privately. They need a mutual friend (your server) to exchange contact details exactly once. After that, they communicate directly. The mutual friend is out of the picture.</p>
+  </section>
+
+  <section id="foundations">
+    <h2>Foundations — The Complete Picture</h2>
+    <p>Before touching any API, you need a mental model of what WebRTC is actually trying to do. The API makes no sense without it. This section explains the problem from scratch, introduces every piece of terminology used throughout this guide, and shows you the complete picture of how a WebRTC connection comes to life.</p>
+
+    <h3>Why Peer-to-Peer Is Hard</h3>
+    <p>The normal model for internet communication is <strong>client-server</strong>. You open YouTube, your browser connects to YouTube's server, and the server sends you a video. Easy. The server has a public address that anyone can reach. Your browser just dials it.</p>
+    <p>Peer-to-peer flips this. Instead of connecting to a well-known server, two browsers — both sitting inside ordinary homes, offices, or mobile networks — need to connect <em>directly to each other</em>. This is surprisingly difficult for one reason: <strong>neither browser has a public address that the other can directly dial.</strong></p>
+
+    <div class="callout warn">
+      <div class="icon">⚠</div>
+      <p>Your laptop does not have a public IP address. It has a local IP like <code>192.168.1.42</code> — meaningful only inside your home router. The outside world cannot reach you at that address. Neither can another browser trying to connect to you. This is called being behind a <strong>NAT</strong> (Network Address Translator), and almost every device on the internet is behind one.</p>
+    </div>
+
+    <p>So two browsers need to find paths to each other through a maze of routers, NATs, and firewalls — paths that neither browser knows about ahead of time. WebRTC's job is to discover those paths automatically and pick the best one.</p>
+
+    <h3>The Two Fundamental Problems WebRTC Solves</h3>
+    <p>Every concept in WebRTC maps back to one of two problems. Keep these in mind as you read the rest of this guide — they explain why every step exists.</p>
+
+    <div class="two-col">
+      <div class="concept-card">
+        <div class="cc-title" style="color:var(--purple);">Problem 1 — "How do I reach you?"</div>
+        <p>Two browsers need to discover a working network path between them through NATs and firewalls. This is solved by <strong>ICE</strong> — the browser automatically tries many possible routes and picks the first one that works.</p>
+      </div>
+      <div class="concept-card">
+        <div class="cc-title" style="color:var(--green);">Problem 2 — "What format do you speak?"</div>
+        <p>Two browsers may support different audio codecs, video resolutions, or compression formats. They need to agree on a common format before sending any media. This is solved by <strong>SDP</strong> — each side describes its capabilities and they negotiate a match.</p>
+      </div>
+    </div>
+
+    <p>Everything else in WebRTC — the offer, the answer, STUN, TURN, renegotiation — is infrastructure built to solve these two problems. Once you see that, the API stops being a collection of mysterious calls and starts being a logical sequence of steps.</p>
+
+    <h3>The Three Phases of Every WebRTC Connection</h3>
+    <p>A WebRTC connection always goes through exactly three phases in order. Phase 1 requires your server. Phases 2 and 3 happen entirely between the two browsers.</p>
+
+    <div class="ascii-box"><pre>
+ ╔══════════════════════════════════════════════════════════════════════════════════╗
+ ║                     THE COMPLETE WEBRTC CONNECTION PICTURE                      ║
+ ╚══════════════════════════════════════════════════════════════════════════════════╝
+
+  ┌─────────────────┐                                      ┌─────────────────┐
+  │                 │                                      │                 │
+  │   Browser A     │                                      │   Browser B     │
+  │   (Caller)      │                                      │   (Callee)      │
+  │                 │                                      │                 │
+  └────────┬────────┘                                      └────────┬────────┘
+           │                                                        │
+           │              ╔══════════════════╗                      │
+           │              ║  YOUR SERVER     ║                      │
+           │              ║  (Signalling)    ║                      │
+           │              ╚══════════════════╝                      │
+           │                       │                                │
+  ─────────────────────────────────────────────────────────────────────────────────
+  PHASE 1  │  S I G N A L L I N G  │  (server is the middleman)    │
+  ─────────────────────────────────────────────────────────────────────────────────
+           │                       │                                │
+           │──── SDP Offer ───────>│──── SDP Offer ───────────────>│
+           │                       │                                │  "Here is what
+           │                       │                                │   I can send.
+           │                       │                                │   What can you?"
+           │<─── SDP Answer ───────│<─── SDP Answer ───────────────│
+           │  "OK, here is what    │                                │
+           │   I can accept."      │                                │
+           │                       │                                │
+           │──── ICE candidate ───>│──── ICE candidate ───────────>│  "Try reaching
+           │──── ICE candidate ───>│──── ICE candidate ───────────>│   me at this
+           │<─── ICE candidate ────│<─── ICE candidate ─────────── │   address..."
+           │<─── ICE candidate ────│<─── ICE candidate ─────────── │
+           │                       │                                │
+           │    (server's job is done — it steps out entirely)      │
+           │                       │                                │
+  ─────────────────────────────────────────────────────────────────────────────────
+  PHASE 2  │  C O N N E C T I O N   E S T A B L I S H M E N T                    │
+  ─────────────────────────────────────────────────────────────────────────────────
+           │                                                        │
+           │   Browser A tries all ICE candidates from Browser B   │
+           │   Browser B tries all ICE candidates from Browser A   │
+           │   First working pair wins. A direct tunnel forms.      │
+           │                                                        │
+           │◄══════════════ direct P2P channel open ══════════════►│
+           │                                                        │
+  ─────────────────────────────────────────────────────────────────────────────────
+  PHASE 3  │  M E D I A   F L O W S   (server not involved)                       │
+  ─────────────────────────────────────────────────────────────────────────────────
+           │                                                        │
+           │◄══════ audio track ════ video track ════ data ════════►│
+           │                                                        │
+           │   Everything from here on is direct, encrypted,        │
+           │   real-time between the two browsers. No server.        │</pre></div>
+
+    <h3>Terminology Glossary</h3>
+    <p>These are all the terms used throughout this guide. Read through them once now — each one will make sense in the context of the diagram above.</p>
+
+    <table class="event-table">
+      <thead><tr><th>Term</th><th>What it is</th><th>Analogy</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Peer</strong></td>
+          <td>Any participant in the connection. In a two-person call, you are one peer, the other person is the other peer. In a room of five, everyone is a peer.</td>
+          <td>A person on a phone call</td>
+        </tr>
+        <tr>
+          <td><strong>Peer-to-peer (P2P)</strong></td>
+          <td>Communication that travels directly between two browsers, with no server in the path once the connection is established. Media bytes go: your browser → their browser, nothing in between.</td>
+          <td>Two people talking directly rather than through an operator</td>
+        </tr>
+        <tr>
+          <td><strong>Signalling</strong></td>
+          <td>The process of exchanging the setup information (SDP and ICE candidates) needed to establish the direct connection. Signalling always goes through your server. The word "signalling" means "coordination before the real communication begins."</td>
+          <td>Exchanging phone numbers before calling</td>
+        </tr>
+        <tr>
+          <td><strong>Signalling server</strong></td>
+          <td>Your server (typically a WebSocket server) that relays SDP and ICE messages between peers during Phase 1. It does not process or inspect the content — it just forwards. Once Phase 2 completes, it is not involved in the call at all.</td>
+          <td>A mutual friend who passes notes between two people who don't know each other yet</td>
+        </tr>
+        <tr>
+          <td><strong>SDP (Session Description Protocol)</strong></td>
+          <td>A text document that describes one browser's media capabilities: which audio codecs it supports, which video resolutions, how many tracks it wants to send, and in which direction. Two peers exchange SDPs to find common ground. You never write SDP manually — the browser generates it.</td>
+          <td>A menu of what you can offer, sent to a restaurant so they can match what they serve</td>
+        </tr>
+        <tr>
+          <td><strong>Offer</strong></td>
+          <td>The first SDP document in the negotiation, created by the <strong>Caller</strong> using <code>createOffer()</code>. It says: "Here are all the formats I can send and receive. What works for you?"</td>
+          <td>Sending your resume first</td>
+        </tr>
+        <tr>
+          <td><strong>Answer</strong></td>
+          <td>The SDP document created by the <strong>Callee</strong> in response to an Offer, using <code>createAnswer()</code>. It says: "From everything you offered, here is what I accept and here is what I can send back."</td>
+          <td>The response letter after reviewing a resume</td>
+        </tr>
+        <tr>
+          <td><strong>ICE (Interactive Connectivity Establishment)</strong></td>
+          <td>The system that discovers network paths between two peers. After <code>setLocalDescription()</code> is called, the browser automatically collects a list of addresses at which it might be reachable — local network addresses, public addresses found via STUN, and relay addresses from TURN. These are the ICE candidates.</td>
+          <td>Trying every possible door in a building to find one that is unlocked</td>
+        </tr>
+        <tr>
+          <td><strong>ICE Candidate</strong></td>
+          <td>A single possible network address through which this browser might be reachable. A browser typically generates 3–10 candidates per connection: local IP, public IP, and relay. Both peers exchange all their candidates and try each combination until one pair works.</td>
+          <td>One possible phone number to try reaching someone</td>
+        </tr>
+        <tr>
+          <td><strong>STUN server</strong></td>
+          <td>A tiny public server that tells your browser its own public IP address — the address that the outside world sees you as. Your browser asks STUN: "What is my public IP?" STUN replies, and that public IP becomes one of your ICE candidates. Google provides a free STUN server at <code>stun.l.google.com:19302</code>.</td>
+          <td>A mirror that shows you what you look like from outside your house</td>
+        </tr>
+        <tr>
+          <td><strong>TURN server</strong></td>
+          <td>A fallback relay server used when a direct P2P path cannot be established (e.g. both peers are behind strict firewalls). Media is routed through the TURN server instead of directly. This is the only case where media touches a server after Phase 1. TURN is needed in roughly 10–15% of connections in production.</td>
+          <td>A postal service when direct delivery is blocked — the letter still gets there, just via a carrier</td>
+        </tr>
+        <tr>
+          <td><strong>Codec</strong></td>
+          <td>A compression format for audio or video. Common audio codecs: Opus, G.711. Common video codecs: VP8, VP9, H.264. Two peers must agree on a codec that both support before sending media. SDP negotiation handles this automatically.</td>
+          <td>A language — both sides need to speak the same one</td>
+        </tr>
+        <tr>
+          <td><strong>Caller / Callee</strong></td>
+          <td>For every pair of peers, one must initiate. The <strong>Caller</strong> creates and sends the Offer. The <strong>Callee</strong> receives it and sends the Answer. In a room-based app, the joining user is always the Caller for every new connection they form.</td>
+          <td>Caller = the one who dials. Callee = the one who picks up.</td>
+        </tr>
+        <tr>
+          <td><strong>Renegotiation</strong></td>
+          <td>A new offer-answer cycle that happens on an <em>already connected</em> pair when something changes — a track is added, a track is removed, or a codec needs updating. The connection stays open; only the SDP is updated to reflect the new state.</td>
+          <td>Amending a contract without ending the working relationship</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>How the Path Discovery Actually Works</h3>
+    <p>This is the part most guides skip, but it demystifies everything that follows. When a browser generates ICE candidates, it is building a list of every possible address at which it might be reachable. It does this by checking three sources.</p>
+
+    <div class="ascii-box"><pre>
+  HOW A BROWSER DISCOVERS ITS ICE CANDIDATES
+
+  Your Browser
+  ─────────────────────────────────────────────────────────
+  Source 1: Local network interfaces
+  └─> 192.168.1.42:12345           ← your laptop's local IP (only works on same WiFi)
+  └─> [::1]:12345                  ← IPv6 loopback (usually filtered out)
+
+  Source 2: STUN server (asks "what's my public IP?")
+  └─> Browser ──────────────────────────> stun.l.google.com:19302
+  └─> STUN replies: "You appear as 203.0.113.78:54321"
+  └─> 203.0.113.78:54321           ← your public IP (works across the internet)
+
+  Source 3: TURN server (relay fallback)
+  └─> Browser connects to your TURN server
+  └─> TURN assigns a relay address: 198.51.100.10:3478
+  └─> 198.51.100.10:3478           ← relay (works when direct paths fail)
+  ─────────────────────────────────────────────────────────
+  All three get sent to the remote peer as ICE candidates.
+  The remote peer tries connecting to each one.
+  The first pair that succeeds on both sides becomes the connection.</pre></div>
+
+    <h3>What Your Code Actually Does (The One-Sentence Summary)</h3>
+    <p>Your code's entire job in WebRTC is to be the messenger between the two browsers during Phase 1. The browser generates the SDP and ICE automatically. You just pick them up and pass them to the other side via your server. Once both sides have exchanged enough information, the browser handles Phase 2 and Phase 3 entirely on its own.</p>
+
+    <div class="callout tip">
+      <div class="icon">✓</div>
+      <p>A useful way to read this guide: every function you write is either (a) creating a message the browser generated, (b) delivering a message to the other peer, or (c) handling a message that arrived from the other peer. The browser does the hard network work. You write the postal service.</p>
+    </div>
+  </section>
+
+  <section id="key-objects">
+    <h2>Key Objects</h2>
+    <p>WebRTC in the browser is built around three core objects. Everything else is built on top of these.</p>
+    <table class="event-table">
+      <thead><tr><th>Object</th><th>What it represents</th><th>How many per user</th></tr></thead>
+      <tbody>
+        <tr><td><code>RTCPeerConnection</code></td><td>A direct link between you and one other person. Manages negotiation, ICE, media sending and receiving.</td><td>One per remote participant</td></tr>
+        <tr><td><code>MediaStream</code></td><td>A container holding one or more tracks. Returned by <code>getUserMedia()</code> or <code>getDisplayMedia()</code>.</td><td>One per source (camera, screen)</td></tr>
+        <tr><td><code>MediaStreamTrack</code></td><td>A single audio or video source. The actual data being transmitted. Tracks are added to a PeerConnection to send them.</td><td>One per audio/video channel</td></tr>
+      </tbody>
+    </table>
+    <p>In a room with 4 users, you will have 3 <code>RTCPeerConnection</code> objects — one for each of the others. These are stored in a Map keyed by the remote user's socket ID.</p>
+    <div class="code-block">
+      <div class="code-header"><span class="fname">Conventions used throughout this guide</span><span class="lang-badge">JavaScript</span></div>
+      <pre><span class="cm">// One Map per user, holding all their connections.</span>
+<span class="kw">const</span> <span class="var">pcMap</span> = <span class="kw">new</span> <span class="fn">Map</span>(); <span class="cm">// socketId => RTCPeerConnection</span>
+<span class="kw">const</span> <span class="var">userMap</span> = <span class="kw">new</span> <span class="fn">Map</span>(); <span class="cm">// socketId => { id, username, socketId, ... }</span>
+
+<span class="cm">// Track references — null until the user explicitly enables them.</span>
+<span class="kw">let</span> <span class="var">audioTrack</span> = <span class="kw">null</span>;
+<span class="kw">let</span> <span class="var">videoTrack</span> = <span class="kw">null</span>;
+<span class="kw">let</span> <span class="var">screenTrack</span> = <span class="kw">null</span>;</pre>
+    </div>
+  </section>
+
+  <section id="rtcpeerconnection-api">
+    <h2>RTCPeerConnection — Properties &amp; Methods</h2>
+    <p><code>RTCPeerConnection</code> is the central object in WebRTC. One instance manages the complete lifecycle of a peer-to-peer connection with a single remote user — SDP negotiation, ICE transport, media senders, and receivers. Every other concept in this guide flows through it.</p>
+
+    <h3>State Properties</h3>
+    <p>These read-only properties reflect the current phase of the connection and are the single source of truth for what the PC is doing at any moment. Read them before calling any method that depends on state.</p>
+    <table class="event-table">
+      <thead><tr><th>Property</th><th>Possible Values</th><th>What it tells you</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>signalingState</code></td>
+          <td><code>"stable"</code> · <code>"have-local-offer"</code> · <code>"have-remote-offer"</code> · <code>"closed"</code></td>
+          <td>Where in the offer-answer cycle this connection currently sits. Must be <code>"stable"</code> before triggering a new offer. Guard every <code>onnegotiationneeded</code> handler with this check.</td>
+        </tr>
+        <tr>
+          <td><code>iceConnectionState</code></td>
+          <td><code>"new"</code> · <code>"checking"</code> · <code>"connected"</code> · <code>"completed"</code> · <code>"failed"</code> · <code>"disconnected"</code> · <code>"closed"</code></td>
+          <td>Health of the underlying ICE transport path. <code>"connected"</code> means media can flow. Call <code>restartIce()</code> on <code>"failed"</code>.</td>
+        </tr>
+        <tr>
+          <td><code>iceGatheringState</code></td>
+          <td><code>"new"</code> · <code>"gathering"</code> · <code>"complete"</code></td>
+          <td>Whether the browser has finished discovering local network addresses. Candidates stop arriving when this reaches <code>"complete"</code>.</td>
+        </tr>
+        <tr>
+          <td><code>connectionState</code></td>
+          <td><code>"new"</code> · <code>"connecting"</code> · <code>"connected"</code> · <code>"disconnected"</code> · <code>"failed"</code> · <code>"closed"</code></td>
+          <td>A higher-level aggregate of both signaling and ICE state. Use this to drive connection-health UI shown to the user.</td>
+        </tr>
+        <tr>
+          <td><code>localDescription</code></td>
+          <td><code>RTCSessionDescription | null</code></td>
+          <td>The SDP this peer committed to via <code>setLocalDescription()</code>. <code>null</code> until the first offer or answer is set.</td>
+        </tr>
+        <tr>
+          <td><code>remoteDescription</code></td>
+          <td><code>RTCSessionDescription | null</code></td>
+          <td>The SDP received from the remote peer via <code>setRemoteDescription()</code>. <code>null</code> means no remote description has been applied yet — ICE candidates must be queued until this is set.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="ascii-box"><pre>
+  signalingState transitions — Caller side
+  ─────────────────────────────────────────────────────────────────────────────
+  "stable"
+    └─ createOffer() + setLocalDescription(offer)   →  "have-local-offer"
+         └─ setRemoteDescription(answer)             →  "stable"
+
+  signalingState transitions — Callee side
+  ─────────────────────────────────────────────────────────────────────────────
+  "stable"
+    └─ setRemoteDescription(offer)                  →  "have-remote-offer"
+         └─ createAnswer() + setLocalDescription()  →  "stable"</pre></div>
+
+    <h3>Core Methods</h3>
+    <p>You call these methods explicitly to drive the negotiation lifecycle and manage tracks. The browser fires the event handlers automatically — these methods are the ones you invoke at the right moment in your code.</p>
+    <table class="event-table">
+      <thead><tr><th>Method</th><th>Returns</th><th>When to call it</th></tr></thead>
+      <tbody>
+        <tr><td><code>createOffer()</code></td><td><code>Promise&lt;RTCSessionDescriptionInit&gt;</code></td><td>Caller side: generates the initial Offer SDP. Also called inside <code>onnegotiationneeded</code> during mid-call renegotiation.</td></tr>
+        <tr><td><code>createAnswer()</code></td><td><code>Promise&lt;RTCSessionDescriptionInit&gt;</code></td><td>Callee side: generates an Answer SDP. Call only after <code>setRemoteDescription(offer)</code> has resolved.</td></tr>
+        <tr><td><code>setLocalDescription(desc)</code></td><td><code>Promise&lt;void&gt;</code></td><td>Commit an offer or answer as the local SDP. Immediately begins ICE candidate generation. Must be called before emitting the SDP over the socket.</td></tr>
+        <tr><td><code>setRemoteDescription(desc)</code></td><td><code>Promise&lt;void&gt;</code></td><td>Apply the remote peer's SDP. Unlocks <code>addIceCandidate()</code> — always flush any queued candidates after this resolves.</td></tr>
+        <tr><td><code>addTrack(track, stream)</code></td><td><code>RTCRtpSender</code></td><td>Add a media track to be sent to the remote peer. Returns an <code>RTCRtpSender</code> handle needed for later removal. Triggers <code>onnegotiationneeded</code> automatically on a connected PC.</td></tr>
+        <tr><td><code>removeTrack(sender)</code></td><td><code>void</code></td><td>Remove a sender returned by <code>addTrack()</code> or found via <code>getSenders()</code>. Triggers <code>onnegotiationneeded</code> automatically.</td></tr>
+        <tr><td><code>getSenders()</code></td><td><code>RTCRtpSender[]</code></td><td>All senders — the tracks you are currently transmitting. Use <code>.find(s =&gt; s.track === myTrack)</code> to locate a specific sender before removing it.</td></tr>
+        <tr><td><code>getReceivers()</code></td><td><code>RTCRtpReceiver[]</code></td><td>All receivers — the tracks arriving from the remote peer. Useful for reading per-track statistics via <code>getStats()</code>.</td></tr>
+        <tr><td><code>addIceCandidate(candidate)</code></td><td><code>Promise&lt;void&gt;</code></td><td>Feed a remote ICE candidate to the transport layer. Must not be called before <code>setRemoteDescription()</code> — queue candidates if the remote description is not yet applied.</td></tr>
+        <tr><td><code>restartIce()</code></td><td><code>void</code></td><td>Force a fresh round of ICE gathering on an already-connected PC. Call when <code>iceConnectionState</code> reaches <code>"failed"</code> to attempt recovery without closing the connection.</td></tr>
+        <tr><td><code>close()</code></td><td><code>void</code></td><td>Permanently terminate the connection. Stops all tracks, releases ICE resources, sets <code>signalingState</code> to <code>"closed"</code>. Cannot be undone — create a new <code>RTCPeerConnection</code> to reconnect.</td></tr>
+        <tr><td><code>getStats()</code></td><td><code>Promise&lt;RTCStatsReport&gt;</code></td><td>Fetch raw connection statistics: packet loss, jitter, round-trip time, bitrate, codec. Used for quality monitoring dashboards.</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Event Handlers</h3>
+    <p>Set these as properties on the PC instance immediately after construction. The browser fires them automatically — you never invoke them yourself.</p>
+    <table class="event-table">
+      <thead><tr><th>Handler</th><th>Fires when</th><th>Your action</th></tr></thead>
+      <tbody>
+        <tr><td><code>onicecandidate</code></td><td>Browser discovers a local network path after <code>setLocalDescription()</code></td><td>Emit <code>event.candidate</code> over the socket to the remote peer</td></tr>
+        <tr><td><code>ontrack</code></td><td>A remote media track arrives through the connection</td><td>Attach <code>event.streams[0]</code> to the remote user's <code>&lt;video&gt;</code> element</td></tr>
+        <tr><td><code>onnegotiationneeded</code></td><td>A track was added or removed, requiring an SDP update</td><td>Guard on <code>signalingState === "stable"</code>, then run a new offer-answer cycle</td></tr>
+        <tr><td><code>oniceconnectionstatechange</code></td><td><code>iceConnectionState</code> transitions to a new value</td><td>Call <code>restartIce()</code> on <code>"failed"</code>; update status UI on <code>"connected"</code> or <code>"disconnected"</code></td></tr>
+        <tr><td><code>onconnectionstatechange</code></td><td><code>connectionState</code> transitions to a new value</td><td>Show connection health indicator to the user; close the PC on <code>"failed"</code></td></tr>
+        <tr><td><code>onsignalingstatechange</code></td><td><code>signalingState</code> transitions to a new value</td><td>Primarily useful for debugging. In production, check state inline rather than relying on this event.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="sdp-ice">
+    <h2>SDP and ICE</h2>
+    <p>These two concepts represent the "contact detail exchange" that happens before a direct connection forms. You do not write them manually — the browser generates them. Your job is only to pass them to the other peer via your server at the right moment.</p>
+    <div class="two-col">
+      <div class="concept-card">
+        <div class="cc-title" style="color:var(--purple);">SDP — Session Description Protocol</div>
+        <p>A text blob describing capabilities: which codecs are supported, how many tracks will be sent, and in which direction. The Caller generates an Offer SDP. The Callee generates an Answer SDP. Together they negotiate a common format.</p>
+      </div>
+      <div class="concept-card">
+        <div class="cc-title" style="color:var(--green);">ICE — Interactive Connectivity Establishment</div>
+        <p>A list of network addresses ("candidates") through which this browser can be reached. Generated automatically after <code>setLocalDescription()</code> is called. Includes local IPs, public IPs via STUN, and relay addresses via TURN. Both peers exchange candidates until a working path is found.</p>
+      </div>
+    </div>
+    <div class="callout warn">
+      <div class="icon">⚠</div>
+      <p>A STUN server is needed for connections across the internet. Google's public server <code>stun:stun.l.google.com:19302</code> works for development. For production, also configure a TURN server — STUN alone fails in some corporate networks and mobile environments.</p>
+    </div>
+  </section>
+
+  <section id="signalling">
+    <h2>The Signalling Server</h2>
+    <p>WebRTC does not define how two peers find each other or exchange SDP and ICE. That is left to you. The mechanism used to carry those messages is called the <strong>signalling layer</strong> — typically a WebSocket server.</p>
+    <p>The server receives messages from one peer and forwards them to another. It never inspects or modifies media. Once the WebRTC connection is established, the signalling server is no longer involved in the call at all.</p>
+    <div class="ascii-box"><pre>
+  Phase 1: SIGNALLING (server is active)
+  ─────────────────────────────────────────────────────────────────────────────
+  Browser A  ---[SDP Offer]----->  Server  ---[SDP Offer]----->  Browser B
+  Browser A  <--[SDP Answer]----  Server  <--[SDP Answer]------  Browser B
+  Browser A  ---[ICE cands]---->  Server  ---[ICE cands]----->   Browser B
+  Browser A  <--[ICE cands]----   Server  <--[ICE cands]------   Browser B
+
+  Phase 2: CONNECTION ESTABLISHED (server steps out)
+  ─────────────────────────────────────────────────────────────────────────────
+  Browser A  <=================== direct P2P channel ==================>  Browser B
+
+  Phase 3: MEDIA FLOWS (server not involved)
+  ─────────────────────────────────────────────────────────────────────────────
+  Browser A  <====== audio tracks / video tracks / data =============>  Browser B</pre></div>
+    <p>The minimum socket events your server must relay for WebRTC to function: <code>offer</code>, <code>answer</code>, and <code>ice-candidate</code>. The server just receives and forwards each — it does not need to understand the content.</p>
+  </section>
+
+  <section id="roles">
+    <h2>Caller and Callee</h2>
+    <p>For every WebRTC connection between two peers, one must go first. The one who initiates is the <strong>Caller</strong>. The one who responds is the <strong>Callee</strong>. One sends the Offer. The other sends the Answer. This asymmetry must be deliberate — if both sides send offers simultaneously, you get a "glare" condition and the connection fails.</p>
+    <div class="callout info">
+      <div class="icon">💡</div>
+      <p>The most reliable convention for a room-based app: <strong>the joining user is always the Caller</strong>. When user C joins a room where A and B exist, C sends offers to both A and B. A and B only answer — they never send their own offers back to C. This guarantees exactly one offer per pair, no glare.</p>
+    </div>
+    <div class="two-col">
+      <div class="concept-card">
+        <div class="cc-title" style="color:var(--accent2);">CALLER — the joining user</div>
+        <p>Receives the list of users already in the room. Creates one <code>RTCPeerConnection</code> per existing user and sends an Offer to each. Awaits an Answer from each.</p>
+      </div>
+      <div class="concept-card">
+        <div class="cc-title" style="color:var(--yellow);">CALLEE — each existing user</div>
+        <p>Receives an offer socket event from the newly joined user. Creates an <code>RTCPeerConnection</code> for that connection, sets the remote description, and sends an Answer back.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="step1">
+    <h2>Step 1 — Join and Announce</h2>
+    <p>When a user arrives at the room, the first action is to notify the server of their presence. The server responds with two distinct events.</p>
+    <div class="step-box"><div class="step-num">1</div><div class="step-content"><strong>Client emits join-room</strong><p>Send a socket event to the server with the room identifier and user identity.</p></div></div>
+    <div class="step-box"><div class="step-num">2</div><div class="step-content"><strong>Server replies: get-others (to this user only)</strong><p>The server sends the list of users already in the room back to the socket that just joined. If the room was empty, the list is empty and no connections need to be formed yet.</p></div></div>
+    <div class="step-box"><div class="step-num">3</div><div class="step-content"><strong>Server broadcasts: user-joined (to all existing users)</strong><p>The server notifies every other user in the room that someone arrived. This fires on every existing user's socket — not on the joiner themselves.</p></div></div>
+    <div class="ascii-box"><pre>
+  User C joins. A and B are already in the room.
+
+  C's socket                  Server               A's socket      B's socket
+  ──────────                  ──────               ──────────      ──────────
+  emit("join-room") ────────> register C
+                              emit("get-others") ──> [A,B] ──> C only
+                              emit("user-joined") ─────────────────────────> A
+                              emit("user-joined") ──────────────────────────────> B
+
+  C receives [A, B]          A receives user-joined=C      B receives user-joined=C
+  C is the CALLER            A is the CALLEE               B is the CALLEE</pre></div>
+  </section>
+
+  <section id="step2">
+    <h2>Step 2 — Create the RTCPeerConnection</h2>
+    <p>Before any offer or answer is exchanged, an <code>RTCPeerConnection</code> object must be created and its event listeners attached. This function is called by both sides — the Caller calls it before sending an offer; the Callee calls it upon receiving the <code>user-joined</code> event.</p>
+    <p>Four events fire automatically on every <code>RTCPeerConnection</code>. You never call them manually.</p>
+    <table class="event-table">
+      <thead><tr><th>Event</th><th>Fires when</th><th>Your responsibility</th></tr></thead>
+      <tbody>
+        <tr><td><code>onicecandidate</code></td><td><span class="badge auto">AUTO</span> Browser finds a network path after <code>setLocalDescription</code></td><td>Send the candidate to the remote peer via socket</td></tr>
+        <tr><td><code>ontrack</code></td><td><span class="badge auto">AUTO</span> Remote peer's media track arrives over the connection</td><td>Attach the stream to the remote user's video element</td></tr>
+        <tr><td><code>oniceconnectionstatechange</code></td><td><span class="badge auto">AUTO</span> State changes: checking → connected → disconnected → failed</td><td>Log state, call <code>restartIce()</code> on failure</td></tr>
+        <tr><td><code>onnegotiationneeded</code></td><td><span class="badge auto">AUTO</span> A track was added or removed and SDP needs updating</td><td>Run a new offer-answer cycle with the remote peer</td></tr>
+      </tbody>
+    </table>
+    <div class="code-block">
+      <div class="code-header"><span class="fname">createPCWith(remoteUser)</span><span class="lang-badge">JavaScript</span></div>
+      <pre><span class="kw">function</span> <span class="fn">createPCWith</span>(<span class="var">remoteUser</span>) {
+    <span class="kw">const</span> <span class="var">pc</span> = <span class="kw">new</span> <span class="fn">RTCPeerConnection</span>({
+        iceServers: [{ urls: <span class="str">"stun:stun.l.google.com:19302"</span> }]
+    });
+    pcMap.<span class="fn">set</span>(<span class="var">remoteUser</span>.socketId, <span class="var">pc</span>);
+
+    <span class="cm">// Fires automatically: send each discovered network path to the remote peer.</span>
+    <span class="var">pc</span>.onicecandidate = (<span class="var">e</span>) => {
+        <span class="kw">if</span> (<span class="var">e</span>.candidate)
+            socket.<span class="fn">emit</span>(<span class="str">"ice-candidate"</span>, { candidate: <span class="var">e</span>.candidate, targetSocketId: <span class="var">remoteUser</span>.socketId });
+    };
+
+    <span class="cm">// Fires automatically: remote peer's media has arrived — show it.</span>
+    <span class="var">pc</span>.ontrack = (<span class="var">e</span>) => {
+        <span class="kw">const</span> <span class="var">vid</span> = document.<span class="fn">getElementById</span>(<span class="str">`video-${<span class="var">remoteUser</span>.socketId}`</span>);
+        <span class="kw">if</span> (<span class="var">vid</span> && <span class="var">e</span>.streams[<span class="num">0</span>]) <span class="var">vid</span>.srcObject = <span class="var">e</span>.streams[<span class="num">0</span>];
+    };
+
+    <span class="cm">// Fires automatically: restart if the path fails.</span>
+    <span class="var">pc</span>.oniceconnectionstatechange = () => {
+        <span class="kw">if</span> (<span class="var">pc</span>.iceConnectionState === <span class="str">"failed"</span>) <span class="var">pc</span>.<span class="fn">restartIce</span>();
+    };
+
+    <span class="cm">// Fires automatically: a track was added/removed — run a new offer-answer cycle.</span>
+    <span class="var">pc</span>.onnegotiationneeded = <span class="kw">async</span> () => {
+        <span class="kw">if</span> (<span class="var">pc</span>.signalingState !== <span class="str">"stable"</span>) <span class="kw">return</span>; <span class="cm">// guard against concurrent triggers</span>
+        <span class="kw">await</span> <span class="fn">sendOfferTo</span>(<span class="var">remoteUser</span>, <span class="var">pc</span>);
+    };
+
+    <span class="kw">return</span> <span class="var">pc</span>;
+}</pre>
+    </div>
+  </section>
+
+  <section id="step3">
+    <h2>Step 3 — The Caller Sends an Offer</h2>
+    <p>After creating the PC, the Caller (the joining user) generates an Offer SDP and transmits it. This is a three-step sequence: create, commit locally, transmit.</p>
+    <div class="ascii-box"><pre>
+  CALLER side
+
+  pc.createOffer()
+    └─> browser generates an SDP blob describing what you can send/receive
+
+  pc.setLocalDescription(offer)
+    └─> you commit to this SDP on your side
+    └─> browser IMMEDIATELY starts generating ICE candidates
+    └─> pc.onicecandidate begins firing (asynchronously, multiple times)
+
+  socket.emit("offer", { offer, targetSocketId })
+    └─> server receives and forwards to the target socket</pre></div>
+    <div class="code-block">
+      <div class="code-header"><span class="fname">sendOfferTo(remoteUser, pc) + get-others handler</span><span class="lang-badge">JavaScript</span></div>
+      <pre><span class="kw">async function</span> <span class="fn">sendOfferTo</span>(<span class="var">remoteUser</span>, <span class="var">pc</span>) {
+    <span class="kw">const</span> <span class="var">offer</span> = <span class="kw">await</span> <span class="var">pc</span>.<span class="fn">createOffer</span>();
+    <span class="kw">await</span> <span class="var">pc</span>.<span class="fn">setLocalDescription</span>(<span class="var">offer</span>);
+    <span class="cm">// ICE candidate generation starts automatically in the background now.</span>
+    socket.<span class="fn">emit</span>(<span class="str">"offer"</span>, { offer, targetSocketId: <span class="var">remoteUser</span>.socketId });
+}
+
+<span class="cm">// The joining user (Caller) receives the list of existing users and offers to each.</span>
+socket.<span class="fn">on</span>(<span class="str">"get-others"</span>, (<span class="var">others</span>) => {
+    <span class="kw">for</span> (<span class="kw">const</span> <span class="var">user</span> <span class="kw">of</span> <span class="var">others</span>) {
+        userMap.<span class="fn">set</span>(<span class="var">user</span>.socketId, <span class="var">user</span>);
+        <span class="fn">addUserToUI</span>(<span class="var">user</span>);
+        <span class="kw">const</span> <span class="var">pc</span> = <span class="fn">createPCWith</span>(<span class="var">user</span>);
+        <span class="fn">sendOfferTo</span>(<span class="var">user</span>, <span class="var">pc</span>); <span class="cm">// Caller sends offer to each existing user</span>
+    }
+});</pre>
+    </div>
+    <div class="callout warn">
+      <div class="icon">⚠</div>
+      <p>When an existing user receives <code>user-joined</code>, they should <strong>not</strong> send an offer. They create the PC and wait. The joining user is the Caller — they send the offer, existing users answer it. If both sides send offers, you get a glare condition and connection fails.</p>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="fname">user-joined handler — existing users (Callees)</span><span class="lang-badge">JavaScript</span></div>
+      <pre><span class="cm">// Existing users are told someone joined. They prepare a PC but do NOT send an offer.</span>
+socket.<span class="fn">on</span>(<span class="str">"user-joined"</span>, (<span class="var">remoteUser</span>) => {
+    userMap.<span class="fn">set</span>(<span class="var">remoteUser</span>.socketId, <span class="var">remoteUser</span>);
+    <span class="fn">addUserToUI</span>(<span class="var">remoteUser</span>);
+    <span class="fn">createPCWith</span>(<span class="var">remoteUser</span>); <span class="cm">// Create and store. No offer. Waits for one from joiner.</span>
+});</pre>
+    </div>
+  </section>
+
+  <section id="step4">
+    <h2>Step 4 — The Callee Answers</h2>
+    <p>The existing user receives the offer via socket, sets it as remote description, generates an Answer SDP, commits to it locally, and sends it back.</p>
+    <div class="ascii-box"><pre>
+  CALLEE side — socket.on("offer") fires
+
+  pc.setRemoteDescription(offer)
+    └─> Callee now knows Caller's capabilities
+
+  pc.createAnswer()
+    └─> browser generates Answer SDP matching what both sides support
+
+  pc.setLocalDescription(answer)
+    └─> Callee commits to the answer
+    └─> Callee's ICE candidates start generating
+
+  socket.emit("answer", { answer, targetSocketId })
+    └─> server forwards it back to the Caller</pre></div>
+    <div class="code-block">
+      <div class="code-header"><span class="fname">offer and answer handlers</span><span class="lang-badge">JavaScript</span></div>
+      <pre><span class="cm">// Existing user (Callee) receives the offer, answers it.</span>
+socket.<span class="fn">on</span>(<span class="str">"offer"</span>, <span class="kw">async</span> ({ offer, senderSocketId }) => {
+    <span class="kw">const</span> <span class="var">pc</span> = pcMap.<span class="fn">get</span>(<span class="var">senderSocketId</span>); <span class="cm">// PC was already created in user-joined</span>
+    <span class="kw">await</span> <span class="var">pc</span>.<span class="fn">setRemoteDescription</span>(<span class="kw">new</span> <span class="fn">RTCSessionDescription</span>(offer));
+    <span class="kw">const</span> <span class="var">answer</span> = <span class="kw">await</span> <span class="var">pc</span>.<span class="fn">createAnswer</span>();
+    <span class="kw">await</span> <span class="var">pc</span>.<span class="fn">setLocalDescription</span>(<span class="var">answer</span>);
+    socket.<span class="fn">emit</span>(<span class="str">"answer"</span>, { answer, targetSocketId: <span class="var">senderSocketId</span> });
+});
+
+<span class="cm">// Joining user (Caller) receives the answer and completes its own SDP setup.</span>
+socket.<span class="fn">on</span>(<span class="str">"answer"</span>, <span class="kw">async</span> ({ answer, senderSocketId }) => {
+    <span class="kw">const</span> <span class="var">pc</span> = pcMap.<span class="fn">get</span>(<span class="var">senderSocketId</span>);
+    <span class="kw">if</span> (<span class="var">pc</span>) <span class="kw">await</span> <span class="var">pc</span>.<span class="fn">setRemoteDescription</span>(<span class="kw">new</span> <span class="fn">RTCSessionDescription</span>(answer));
+});</pre>
+    </div>
+  </section>
+
+  <section id="step5">
+    <h2>Step 5 — ICE Candidate Exchange</h2>
+    <p>After each side calls <code>setLocalDescription</code>, the browser asynchronously discovers multiple network paths and fires <code>onicecandidate</code> for each one. These are sent to the remote peer, who adds them via <code>addIceCandidate()</code>. The browser tries all candidates and uses the best working path.</p>
+    <div class="callout danger">
+      <div class="icon">!</div>
+      <p><strong>Race condition:</strong> ICE candidates can arrive at the remote peer via socket before <code>setRemoteDescription()</code> has been called on their PC. Calling <code>addIceCandidate()</code> before setting the remote description throws an error. Wrap it in try-catch at minimum. For production, maintain a pending candidates queue per socketId and flush it after <code>setRemoteDescription</code> completes.</p>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="fname">socket.on("ice-candidate")</span><span class="lang-badge">JavaScript</span></div>
+      <pre>socket.<span class="fn">on</span>(<span class="str">"ice-candidate"</span>, <span class="kw">async</span> ({ candidate, senderSocketId }) => {
+    <span class="kw">const</span> <span class="var">pc</span> = pcMap.<span class="fn">get</span>(<span class="var">senderSocketId</span>);
+    <span class="kw">if</span> (<span class="var">pc</span> && candidate) {
+        <span class="kw">try</span> {
+            <span class="kw">await</span> <span class="var">pc</span>.<span class="fn">addIceCandidate</span>(<span class="kw">new</span> <span class="fn">RTCIceCandidate</span>(candidate));
+        } <span class="kw">catch</span> (<span class="var">e</span>) {
+            console.<span class="fn">warn</span>(<span class="str">"ICE candidate error (possible race condition):"</span>, e);
+        }
+    }
+});</pre>
+    </div>
+    <p>Once enough candidates are exchanged and a path is confirmed, <code>pc.iceConnectionState</code> transitions to <code>"connected"</code>. The peer-to-peer channel is live.</p>
+  </section>
+
+  <section id="race-conditions">
+    <h2>Race Condition Handling</h2>
+    <p>A race condition is when two things happen in parallel and the second one assumes the first is already done — but it isn't yet. In WebRTC, socket messages and browser async operations run independently of each other. They do not wait for each other. That independence is what causes races.</p>
+    <p>Three specific races can break a WebRTC connection silently — meaning no visible error, just a connection that never works. Each one has a fix that is a few lines of code once you understand what is happening.</p>
+
+    <h3>Race 1 — ICE Candidates Arriving Before Remote Description</h3>
+
+    <p><strong>The situation in plain English:</strong> The Caller finishes generating their offer and immediately starts discovering network paths (ICE candidates). Those candidates get sent over the socket right away. But on the Callee's side, processing the offer takes a moment — it is async. So the candidates can land on the Callee before the Callee has even started processing the offer. When the Callee then tries to use those candidates, the connection has no idea what they are for. The candidates are thrown away. Permanently.</p>
+
+    <div class="ascii-box"><pre>
+  TIMELINE — What the race looks like
+
+  Caller                                    Callee
+  ──────                                    ──────
+  setLocalDescription(offer)
+    └─> ICE gathering starts immediately
+  socket.emit("offer")           ─────────────────────────> [sits in queue]
+  socket.emit("ice-candidate")   ─────────────────────────> ARRIVES FIRST
+  socket.emit("ice-candidate")   ─────────────────────────> ARRIVES SECOND
+  socket.emit("ice-candidate")   ─────────────────────────> ARRIVES THIRD
+                                            ↓
+                                  Callee tries addIceCandidate()
+                                  but remoteDescription is still null
+                                  → THROWS. Candidates are gone forever.
+                                            ↓
+                                  [offer event finally fires]
+                                  setRemoteDescription(offer)
+                                  ← too late. Those candidates are lost.</pre></div>
+
+    <p><strong>The mental model for the fix — a waiting room:</strong> Think of the queue as a waiting room. When ICE candidates arrive and the connection is not ready for them yet, they sit in the waiting room and wait. The moment the connection becomes ready (i.e., <code>setRemoteDescription()</code> finishes), you open the door and let all the waiting candidates in at once. After that, any new candidates that arrive go straight in — the waiting room is no longer needed.</p>
+
+    <div class="ascii-box"><pre>
+  QUEUE STAGES — Mental model
+
+  Stage 1: WAITING ROOM EMPTY, CONNECTION NOT READY YET
+  ──────────────────────────────────────────────────────
+  remoteDescription = null
+  pendingCandidates["socketA"] = []          ← waiting room exists but is empty
+
+  Stage 2: CANDIDATES ARRIVE, CONNECTION STILL NOT READY
+  ──────────────────────────────────────────────────────
+  ice-candidate arrives → remoteDescription still null → goes into waiting room
+  pendingCandidates["socketA"] = [cand1]
+
+  ice-candidate arrives → remoteDescription still null → waiting room
+  pendingCandidates["socketA"] = [cand1, cand2]
+
+  ice-candidate arrives → remoteDescription still null → waiting room
+  pendingCandidates["socketA"] = [cand1, cand2, cand3]
+
+  Stage 3: CONNECTION BECOMES READY (setRemoteDescription resolves)
+  ──────────────────────────────────────────────────────────────────
+  remoteDescription is now set ✓
+  flushPendingCandidates("socketA") is called immediately
+    → addIceCandidate(cand1) ✓
+    → addIceCandidate(cand2) ✓
+    → addIceCandidate(cand3) ✓
+  pendingCandidates["socketA"] = []          ← waiting room cleared
+
+  Stage 4: CONNECTION READY, NEW CANDIDATES BYPASS WAITING ROOM
+  ──────────────────────────────────────────────────────────────
+  ice-candidate arrives → remoteDescription is set → addIceCandidate() directly ✓</pre></div>
+
+    <p>Now here is the code that implements exactly this, broken into three parts.</p>
+
+    <p><strong>Part A — The waiting room data structure.</strong> A <code>Map</code> is used because you have one queue per remote user, not one global queue. If you are in a room with three others, you have three separate waiting rooms, one per socketId.</p>
+    <div class="code-block">
+      <div class="code-header"><span class="fname">Part A — Declare the queue</span><span class="lang-badge">JavaScript</span></div>
+      <pre><span class="cm">// This Map holds a list of candidates for each remote peer.</span>
+<span class="cm">// Key:   the remote user's socketId (a string like "XkP2q...")</span>
+<span class="cm">// Value: an array of ICE candidate objects that arrived too early</span>
+<span class="cm">//</span>
+<span class="cm">// Example of what it looks like mid-race:</span>
+<span class="cm">//   pendingCandidates = {</span>
+<span class="cm">//     "XkP2q..." => [candidate1, candidate2, candidate3],</span>
+<span class="cm">//     "Rm9zL..." => [candidate1]</span>
+<span class="cm">//   }</span>
+<span class="kw">const</span> <span class="var">pendingCandidates</span> = <span class="kw">new</span> <span class="fn">Map</span>();</pre>
+    </div>
+
+    <p><strong>Part B — The ICE candidate handler with the queue logic.</strong> Every time a candidate arrives, you ask one question: is the connection ready for it? If yes, apply it directly. If no, put it in the waiting room.</p>
+    <div class="code-block">
+      <div class="code-header"><span class="fname">Part B — ICE candidate handler: apply or queue</span><span class="lang-badge">JavaScript</span></div>
+      <pre>socket.<span class="fn">on</span>(<span class="str">"ice-candidate"</span>, <span class="kw">async</span> ({ candidate, senderSocketId }) => {
+
+    <span class="cm">// Look up the connection for the person who sent this candidate.</span>
+    <span class="kw">const</span> <span class="var">pc</span> = pcMap.<span class="fn">get</span>(<span class="var">senderSocketId</span>);
+
+    <span class="cm">// Safety check: if we have no PC for this person, or the candidate</span>
+    <span class="cm">// itself is null (the browser sends a null at the end of gathering),</span>
+    <span class="cm">// just ignore it and stop here.</span>
+    <span class="kw">if</span> (!<span class="var">pc</span> || !candidate) <span class="kw">return</span>;
+
+    <span class="cm">// THE KEY QUESTION: does this PC already have a remote description?</span>
+    <span class="cm">// pc.remoteDescription is null until setRemoteDescription() has been called.</span>
+    <span class="cm">// If it is NOT null, the connection is ready — apply the candidate now.</span>
+    <span class="kw">if</span> (<span class="var">pc</span>.remoteDescription) {
+
+        <span class="cm">// Safe path: the offer/answer has been exchanged, so the PC knows</span>
+        <span class="cm">// what this connection is. It can accept the candidate immediately.</span>
+        <span class="kw">try</span> {
+            <span class="kw">await</span> <span class="var">pc</span>.<span class="fn">addIceCandidate</span>(<span class="kw">new</span> <span class="fn">RTCIceCandidate</span>(candidate));
+        } <span class="kw">catch</span> (<span class="var">e</span>) {
+            console.<span class="fn">warn</span>(<span class="str">"ICE add failed:"</span>, <span class="var">e</span>);
+        }
+
+    } <span class="kw">else</span> {
+
+        <span class="cm">// Too-early path: pc.remoteDescription is still null.</span>
+        <span class="cm">// We cannot use this candidate yet — put it in the waiting room.</span>
+
+        <span class="cm">// If there is no waiting room for this person yet, create one.</span>
+        <span class="cm">// (This runs on the very first early candidate from that peer.)</span>
+        <span class="kw">if</span> (!<span class="var">pendingCandidates</span>.<span class="fn">has</span>(<span class="var">senderSocketId</span>))
+            <span class="var">pendingCandidates</span>.<span class="fn">set</span>(<span class="var">senderSocketId</span>, []);
+
+        <span class="cm">// Add this candidate to their waiting room array.</span>
+        <span class="cm">// It will sit here until flushPendingCandidates() is called.</span>
+        <span class="var">pendingCandidates</span>.<span class="fn">get</span>(<span class="var">senderSocketId</span>).<span class="fn">push</span>(candidate);
+    }
+});</pre>
+    </div>
+
+    <p><strong>Part C — The flush function.</strong> This is called the moment <code>setRemoteDescription()</code> finishes. It empties the waiting room by feeding all held candidates into the now-ready connection, one by one.</p>
+    <div class="code-block">
+      <div class="code-header"><span class="fname">Part C — flushPendingCandidates: drain the waiting room</span><span class="lang-badge">JavaScript</span></div>
+      <pre><span class="kw">async function</span> <span class="fn">flushPendingCandidates</span>(<span class="var">socketId</span>) {
+
+    <span class="cm">// Get the connection we are flushing into.</span>
+    <span class="kw">const</span> <span class="var">pc</span> = pcMap.<span class="fn">get</span>(<span class="var">socketId</span>);
+
+    <span class="cm">// Get all candidates that were stored in the waiting room.</span>
+    <span class="cm">// The "?? []" means: if there is no entry for this socketId at all</span>
+    <span class="cm">// (no race happened, nobody was queued), use an empty array instead.</span>
+    <span class="cm">// That way the function is always safe to call, even if the queue is empty.</span>
+    <span class="kw">const</span> <span class="var">queue</span> = <span class="var">pendingCandidates</span>.<span class="fn">get</span>(<span class="var">socketId</span>) ?? [];
+
+    <span class="cm">// IMPORTANT: delete the waiting room BEFORE processing candidates.</span>
+    <span class="cm">// Why? Because addIceCandidate() is async. If a new candidate arrives</span>
+    <span class="cm">// while we are in the middle of flushing, the handler above would see</span>
+    <span class="cm">// that remoteDescription is now set and take the safe path — no double-queue.</span>
+    <span class="var">pendingCandidates</span>.<span class="fn">delete</span>(<span class="var">socketId</span>);
+
+    <span class="cm">// Now loop through every candidate that was waiting and apply them.</span>
+    <span class="cm">// We use "for...of" (not forEach) because we need to await each one</span>
+    <span class="cm">// sequentially — addIceCandidate is async and order can matter.</span>
+    <span class="kw">for</span> (<span class="kw">const</span> <span class="var">candidate</span> <span class="kw">of</span> <span class="var">queue</span>) {
+        <span class="kw">try</span> {
+            <span class="kw">await</span> <span class="var">pc</span>.<span class="fn">addIceCandidate</span>(<span class="kw">new</span> <span class="fn">RTCIceCandidate</span>(<span class="var">candidate</span>));
+        } <span class="kw">catch</span> (<span class="var">e</span>) {
+            <span class="cm">// A candidate failing here is usually harmless — the browser</span>
+            <span class="cm">// will find other paths. Log it but do not stop the loop.</span>
+            console.<span class="fn">warn</span>(<span class="str">"ICE flush error on one candidate:"</span>, <span class="var">e</span>);
+        }
+    }
+    <span class="cm">// After this function returns, the waiting room is gone and all</span>
+    <span class="cm">// candidates have been applied. The race window is closed.</span>
+}</pre>
+    </div>
+
+    <p><strong>Part D — Wiring the flush into the offer and answer handlers.</strong> The one rule: call <code>flushPendingCandidates()</code> immediately after every <code>setRemoteDescription()</code> call. There are two places where <code>setRemoteDescription()</code> is called — the offer handler (Callee side) and the answer handler (Caller side). Both need the flush.</p>
+    <div class="code-block">
+      <div class="code-header"><span class="fname">Part D — Updated offer and answer handlers with flush</span><span class="lang-badge">JavaScript</span></div>
+      <pre><span class="cm">// CALLEE SIDE — receives the offer, processes it, sends back an answer.</span>
+socket.<span class="fn">on</span>(<span class="str">"offer"</span>, <span class="kw">async</span> ({ offer, senderSocketId }) => {
+    <span class="kw">const</span> <span class="var">pc</span> = pcMap.<span class="fn">get</span>(<span class="var">senderSocketId</span>);
+
+    <span class="cm">// Step 1: Apply the offer. This sets remoteDescription on the PC.</span>
+    <span class="cm">// After this line, the PC knows who it is talking to.</span>
+    <span class="kw">await</span> <span class="var">pc</span>.<span class="fn">setRemoteDescription</span>(<span class="kw">new</span> <span class="fn">RTCSessionDescription</span>(offer));
+
+    <span class="cm">// Step 2: Flush immediately. setRemoteDescription just resolved,</span>
+    <span class="cm">// so the PC can now accept candidates. Empty the waiting room now.</span>
+    <span class="cm">// Any candidates that arrived before the offer are applied here.</span>
+    <span class="kw">await</span> <span class="fn">flushPendingCandidates</span>(<span class="var">senderSocketId</span>);
+
+    <span class="cm">// Step 3: Create and send the answer. Continue as normal.</span>
+    <span class="kw">const</span> <span class="var">answer</span> = <span class="kw">await</span> <span class="var">pc</span>.<span class="fn">createAnswer</span>();
+    <span class="kw">await</span> <span class="var">pc</span>.<span class="fn">setLocalDescription</span>(<span class="var">answer</span>);
+    socket.<span class="fn">emit</span>(<span class="str">"answer"</span>, { answer, targetSocketId: <span class="var">senderSocketId</span> });
+});
+
+<span class="cm">// CALLER SIDE — receives the answer, completes its own SDP setup.</span>
+socket.<span class="fn">on</span>(<span class="str">"answer"</span>, <span class="kw">async</span> ({ answer, senderSocketId }) => {
+    <span class="kw">const</span> <span class="var">pc</span> = pcMap.<span class="fn">get</span>(<span class="var">senderSocketId</span>);
+    <span class="kw">if</span> (!<span class="var">pc</span>) <span class="kw">return</span>;
+
+    <span class="cm">// Step 1: Apply the answer. This sets remoteDescription on the Caller's PC.</span>
+    <span class="kw">await</span> <span class="var">pc</span>.<span class="fn">setRemoteDescription</span>(<span class="kw">new</span> <span class="fn">RTCSessionDescription</span>(answer));
+
+    <span class="cm">// Step 2: Flush here too. The Caller's PC also receives ICE candidates</span>
+    <span class="cm">// from the Callee that might have arrived before this answer was processed.</span>
+    <span class="kw">await</span> <span class="fn">flushPendingCandidates</span>(<span class="var">senderSocketId</span>);
+});</pre>
+    </div>
+
+    <h3>Race 2 — Concurrent onnegotiationneeded Triggers</h3>
+
+    <p><strong>The situation in plain English:</strong> Imagine you add your audio track and your video track to the connection at the same time (in a loop). The browser sees each <code>addTrack()</code> call and thinks: "something changed, I need to renegotiate" — so it fires <code>onnegotiationneeded</code> once for audio and once for video. Your handler sends a new offer on the first trigger. But the second trigger fires almost immediately, while the first offer is still mid-flight. You try to create a second offer and the browser stops you: "you already have an offer in flight, <code>signalingState</code> is <code>"have-local-offer"</code>, not <code>"stable"</code>"— and it throws.</p>
+
+    <p><strong>Why you do not need to retry:</strong> The browser is smarter than it seems here. Once the first offer-answer cycle completes and <code>signalingState</code> returns to <code>"stable"</code>, the browser automatically re-fires <code>onnegotiationneeded</code> one more time — this time with the full picture of all tracks that changed. You do not need to track what you missed. You just need to skip the bad trigger.</p>
+
+    <div class="ascii-box"><pre>
+  WHAT HAPPENS WITHOUT THE GUARD
+
+  addTrack(audioTrack) fires onnegotiationneeded
+    → signalingState = "stable" → send offer ✓ → signalingState = "have-local-offer"
+
+  addTrack(videoTrack) fires onnegotiationneeded (milliseconds later)
+    → signalingState = "have-local-offer" → try to send another offer
+    → setLocalDescription() THROWS because an offer is already in flight ✗
+
+  WHAT HAPPENS WITH THE GUARD
+
+  addTrack(audioTrack) fires onnegotiationneeded
+    → signalingState = "stable" → send offer ✓ → signalingState = "have-local-offer"
+
+  addTrack(videoTrack) fires onnegotiationneeded
+    → signalingState = "have-local-offer" → guard triggers → return early (skip)
+
+  ... offer is answered, cycle completes, signalingState = "stable" again ...
+
+  Browser re-fires onnegotiationneeded automatically
+    → signalingState = "stable" → send offer ✓ (now includes both audio + video)</pre></div>
+
+    <div class="code-block">
+      <div class="code-header"><span class="fname">onnegotiationneeded — the signalingState guard explained</span><span class="lang-badge">JavaScript</span></div>
+      <pre><span class="var">pc</span>.onnegotiationneeded = <span class="kw">async</span> () => {
+
+    <span class="cm">// Before doing anything, check whether the connection is in a</span>
+    <span class="cm">// "calm" state. "stable" means: no offer is currently in flight,</span>
+    <span class="cm">// and we are not in the middle of processing someone else's offer.</span>
+    <span class="cm">// It is the only state where creating a new offer is safe.</span>
+    <span class="kw">if</span> (<span class="var">pc</span>.signalingState !== <span class="str">"stable"</span>) {
+
+        <span class="cm">// An offer is already being negotiated. Skip this trigger.</span>
+        <span class="cm">// Do NOT retry. Do NOT queue this. Just return.</span>
+        <span class="cm">// The browser will fire onnegotiationneeded again once</span>
+        <span class="cm">// the current cycle completes and signalingState = "stable".</span>
+        console.<span class="fn">log</span>(<span class="str">"Negotiation skipped — already negotiating. State:"</span>, <span class="var">pc</span>.signalingState);
+        <span class="kw">return</span>;
+    }
+
+    <span class="cm">// Safe to proceed. signalingState is "stable", so we are the only</span>
+    <span class="cm">// offer in flight. Send it.</span>
+    <span class="kw">await</span> <span class="fn">sendOfferTo</span>(<span class="var">remoteUser</span>, <span class="var">pc</span>);
+};</pre>
+    </div>
+
+    <h3>Race 3 — Stale Answer in Wrong Signaling State</h3>
+
+    <p><strong>The situation in plain English:</strong> This one is rarer but more dramatic. In edge cases — a user's page reloads mid-call, a socket reconnects and replays old events, or a server glitch sends a duplicate message — an "answer" socket event arrives when your PC is not actually waiting for one. Maybe you already got the answer and your <code>signalingState</code> is back to <code>"stable"</code>, or maybe something went wrong and the PC was closed. Calling <code>setRemoteDescription(answer)</code> when the state is not <code>"have-local-offer"</code> throws an error. The guard is a single if-check that says: "if I am not actively waiting for an answer right now, ignore this."</p>
+
+    <div class="ascii-box"><pre>
+  NORMAL FLOW (no race)                     EDGE CASE (stale answer)
+  ─────────────────────────────────         ───────────────────────────────────────
+  signalingState = "stable"                 signalingState = "stable"
+  sendOffer()                               sendOffer()
+  signalingState = "have-local-offer"       signalingState = "have-local-offer"
+  answer arrives → correct state ✓          answer arrives → applied ✓
+  setRemoteDescription(answer)              signalingState = "stable"
+  signalingState = "stable"
+                                            [network glitch: same answer resent]
+                                            answer arrives AGAIN
+                                            signalingState = "stable" ← not expecting one
+                                            setRemoteDescription() → THROWS ✗
+                                                  ↓
+                                            guard catches it → return early ✓</pre></div>
+
+    <div class="code-block">
+      <div class="code-header"><span class="fname">Defensive answer handler — state guard explained</span><span class="lang-badge">JavaScript</span></div>
+      <pre>socket.<span class="fn">on</span>(<span class="str">"answer"</span>, <span class="kw">async</span> ({ answer, senderSocketId }) => {
+    <span class="kw">const</span> <span class="var">pc</span> = pcMap.<span class="fn">get</span>(<span class="var">senderSocketId</span>);
+
+    <span class="cm">// If there is no PC for this person at all (e.g., they left and</span>
+    <span class="cm">// we cleaned up), just ignore the message entirely.</span>
+    <span class="kw">if</span> (!<span class="var">pc</span>) <span class="kw">return</span>;
+
+    <span class="cm">// "have-local-offer" is the ONLY state where receiving an answer makes sense.</span>
+    <span class="cm">// It means: we sent an offer and we are actively waiting for their answer.</span>
+    <span class="cm">// Any other state — "stable", "have-remote-offer", "closed" — means</span>
+    <span class="cm">// this answer is unexpected. Applying it would throw. Ignore it instead.</span>
+    <span class="kw">if</span> (<span class="var">pc</span>.signalingState !== <span class="str">"have-local-offer"</span>) {
+        console.<span class="fn">warn</span>(<span class="str">"Unexpected answer received. Current state:"</span>, <span class="var">pc</span>.signalingState, <span class="str">"— ignoring."</span>);
+        <span class="kw">return</span>; <span class="cm">// Do nothing. Do not throw. Just quietly discard it.</span>
+    }
+
+    <span class="cm">// We ARE in "have-local-offer" — this is the answer we expected. Apply it.</span>
+    <span class="kw">await</span> <span class="var">pc</span>.<span class="fn">setRemoteDescription</span>(<span class="kw">new</span> <span class="fn">RTCSessionDescription</span>(answer));
+
+    <span class="cm">// And as always: flush any candidates that were waiting for this moment.</span>
+    <span class="kw">await</span> <span class="fn">flushPendingCandidates</span>(<span class="var">senderSocketId</span>);
+});</pre>
+    </div>
+
+    <div class="callout tip">
+      <div class="icon">✓</div>
+      <p>All three guards together — <strong>pending candidate queue</strong> (Race 1), <strong>signalingState check in onnegotiationneeded</strong> (Race 2), and <strong>state guard before setRemoteDescription</strong> (Race 3) — cover the vast majority of race conditions encountered in production WebRTC apps. Add all three from the start. They are cheap to write and extremely expensive to debug after the fact.</p>
+    </div>
+  </section>
+
+  <section id="step6">
+    <h2>Step 6 — Media Flows Automatically</h2>
+    <p>Once the connection is established, if either peer has called <code>pc.addTrack()</code> at any point, the remote peer's <code>pc.ontrack</code> fires automatically with the incoming stream. No additional code is needed on the receiver side — the handler attached in Step 2 takes care of it.</p>
+    <div class="ascii-box"><pre>
+  Either peer calls pc.addTrack(track, stream)
+         |
+         v
+  onnegotiationneeded fires automatically on that PC
+         |
+         v
+  sendOfferTo() runs → new offer-answer cycle
+         |
+         v
+  ICE completes (or reuses existing path)
+         |
+         v
+  Remote peer's pc.ontrack fires automatically
+         |
+         v
+  Remote video element updated — media is visible</pre></div>
+  </section>
+
+  <section id="mesh">
+    <h2>Mesh Topology</h2>
+    <p>In a room with N users, each user maintains a direct peer connection to every other user. This is called a <strong>full mesh</strong>. Every user has (N-1) <code>RTCPeerConnection</code> objects, and the total connections in the room grows as N*(N-1)/2.</p>
+    <div class="ascii-box"><pre>
+  4-user room — each line represents one RTCPeerConnection
+
+         A
+        / \
+       /   \
+      B─────C
+       \   /
+        \ /
+         D
+
+  A's pcMap: { B, C, D }    (3 connections)
+  B's pcMap: { A, C, D }    (3 connections)
+  C's pcMap: { A, B, D }    (3 connections)
+  D's pcMap: { A, B, C }    (3 connections)
+
+  Total unique connections: 6</pre></div>
+    <p>Mesh is the simplest architecture and works well for small rooms (up to roughly 4–6 users). For larger rooms, a Selective Forwarding Unit (SFU) server is used — each user sends one stream to the server and the server distributes it. SFU is a production-scale infrastructure concern beyond the scope of this guide.</p>
+  </section>
+
+  <section id="n-users">
+    <h2>N Users Joining — Complete Sequence</h2>
+    <p>The following traces the exact event sequence when C joins a room where A and B are already connected to each other.</p>
+    <div class="ascii-box"><pre>
+  A and B already have a connection between them. C joins.
+
+  C's socket           Server              A's socket          B's socket
+  ────────             ──────              ──────────          ──────────
+  emit("join-room") -> registers C
+                       get-others ──> [A,B] ──> to C only
+                       user-joined ──────────────────────────> to A
+                       user-joined ─────────────────────────────────────> to B
+
+  C receives [A, B]:              A receives user-joined=C:    B receives user-joined=C:
+    createPCWith(A)                 createPCWith(C)              createPCWith(C)
+    sendOfferTo(A) ─offer──────>    [waits for C's offer]        [waits for C's offer]
+    createPCWith(B)
+    sendOfferTo(B) ─offer──────────────────────────────────>
+
+                                  A receives offer from C:     B receives offer from C:
+                                    setRemoteDescription         setRemoteDescription
+                                    createAnswer                 createAnswer
+                                    setLocalDescription          setLocalDescription
+                                    emit("answer") ──────────>   emit("answer") ──────────>
+
+  C receives answer from A:
+    setRemoteDescription(answerA)
+  C receives answer from B:
+    setRemoteDescription(answerB)
+
+  ICE candidates exchanged in parallel on all three pairs: C↔A, C↔B
+  (A↔B connection already exists and is unaffected)
+
+  Final pcMap state:
+    A:  { B.socketId => PC(A-B),  C.socketId => PC(A-C) }
+    B:  { A.socketId => PC(A-B),  C.socketId => PC(B-C) }
+    C:  { A.socketId => PC(A-C),  B.socketId => PC(B-C) }</pre></div>
+    <div class="callout tip">
+      <div class="icon">✓</div>
+      <p>A and B's existing connection is completely unaffected when C joins. Each connection is independent. Adding a user means forming new pairs — not disrupting or rebuilding existing ones.</p>
+    </div>
+  </section>
+
+  <section id="user-leaves">
+    <h2>User Leaving</h2>
+    <p>Two teardown paths must be handled: when you leave, and when someone else leaves while you remain.</p>
+    <h3>When you leave</h3>
+    <div class="step-box"><div class="step-num">1</div><div class="step-content"><strong>Close all peer connections</strong><p>Iterate over <code>pcMap</code>, call <code>pc.close()</code> on each, then clear the map.</p></div></div>
+    <div class="step-box"><div class="step-num">2</div><div class="step-content"><strong>Stop all local tracks</strong><p>Call <code>track.stop()</code> on each active track. This releases the camera and microphone hardware. Failing to do this leaves the browser's recording indicator active.</p></div></div>
+    <div class="step-box"><div class="step-num">3</div><div class="step-content"><strong>Notify server</strong><p>Emit a <code>leave-room</code> event so the server notifies others, then disconnect the socket.</p></div></div>
+    <h3>When someone else leaves</h3>
+    <div class="code-block">
+      <div class="code-header"><span class="fname">socket.on("user-left")</span><span class="lang-badge">JavaScript</span></div>
+      <pre>socket.<span class="fn">on</span>(<span class="str">"user-left"</span>, ({ socketId }) => {
+    <span class="kw">const</span> <span class="var">pc</span> = pcMap.<span class="fn">get</span>(socketId);
+    <span class="kw">if</span> (<span class="var">pc</span>) { <span class="var">pc</span>.<span class="fn">close</span>(); pcMap.<span class="fn">delete</span>(socketId); }
+    userMap.<span class="fn">delete</span>(socketId);
+    <span class="fn">removeUserFromUI</span>(socketId);
+});</pre>
+    </div>
+  </section>
+
+  <section id="tracks">
+    <h2>Tracks and Streams</h2>
+    <p>A <code>MediaStreamTrack</code> is a single source of media — one audio channel or one video channel. A <code>MediaStream</code> groups one or more tracks together. You interact with tracks in two contexts: getting them from hardware, and adding them to peer connections to send to remote peers.</p>
+    <div class="code-block">
+      <div class="code-header"><span class="fname">Acquiring tracks from hardware</span><span class="lang-badge">JavaScript</span></div>
+      <pre><span class="cm">// Camera and microphone</span>
+<span class="kw">const</span> <span class="var">camStream</span> = <span class="kw">await</span> navigator.mediaDevices.<span class="fn">getUserMedia</span>({ video: <span class="kw">true</span>, audio: <span class="kw">true</span> });
+<span class="kw">const</span> <span class="var">videoTrack</span> = <span class="var">camStream</span>.<span class="fn">getVideoTracks</span>()[<span class="num">0</span>];
+<span class="kw">const</span> <span class="var">audioTrack</span> = <span class="var">camStream</span>.<span class="fn">getAudioTracks</span>()[<span class="num">0</span>];
+
+<span class="cm">// Screen capture</span>
+<span class="kw">const</span> <span class="var">screenStream</span> = <span class="kw">await</span> navigator.mediaDevices.<span class="fn">getDisplayMedia</span>({ video: <span class="kw">true</span> });
+<span class="kw">const</span> <span class="var">screenTrack</span> = <span class="var">screenStream</span>.<span class="fn">getVideoTracks</span>()[<span class="num">0</span>];</pre>
+    </div>
+    <p>Once you have a track, add it to every PC in <code>pcMap</code> using <code>pc.addTrack(track, stream)</code>. Each connection is independent — you must call this on every PC. Adding a track to a connected PC triggers <code>onnegotiationneeded</code> automatically.</p>
+  </section>
+
+  <section id="starting-off">
+    <h2>Starting With No Tracks</h2>
+    <p>The correct default state for a video call app: user joins with camera off, mic off, screen not shared. No permission prompts on join, no media acquired until the user explicitly enables something.</p>
+    <p>WebRTC handles this gracefully. An <code>RTCPeerConnection</code> can be established between two users even if neither has any tracks. The connection reaches <code>"connected"</code> state with no media flowing. When either user enables a track later, <code>onnegotiationneeded</code> fires and the SDP updates automatically.</p>
+    <div class="callout info">
+      <div class="icon">💡</div>
+      <p>The connection is a channel. Tracks are what you choose to send through it. You can add tracks, remove tracks, and swap tracks — the channel stays open throughout. The connection lifecycle and the track lifecycle are independent.</p>
+    </div>
+    <div class="ascii-box"><pre>
+  At join time (correct default):
+
+  User A <────── connected, zero tracks ──────> User B
+                 iceConnectionState = "connected"
+                 signalingState = "stable"
+                 No audio, no video flowing.
+
+  After A enables camera:
+
+  User A <────── connected + video track ──────> User B
+                 B's pc.ontrack fires automatically
+                 B sees A's video</pre></div>
+  </section>
+
+  <section id="toggling">
+    <h2>Toggling Tracks On and Off</h2>
+    <p>Two operations are both commonly called "toggling", but they behave differently in WebRTC.</p>
+    <div class="two-col">
+      <div class="concept-card">
+        <div class="cc-title" style="color:var(--green);">track.enabled = false / true</div>
+        <p>Pauses the track without removing it from the connection. No renegotiation. The slot in the SDP stays reserved. Re-enabling is instant. Use this for muting mic or temporarily disabling camera.</p>
+      </div>
+      <div class="concept-card">
+        <div class="cc-title" style="color:var(--red);">pc.removeTrack(sender)</div>
+        <p>Fully removes the track from the connection. <code>onnegotiationneeded</code> fires and a new offer-answer cycle runs. Use this when stopping screen share and switching back to camera.</p>
+      </div>
+    </div>
+
+    <h3>Toggle mic — enabled flag pattern</h3>
+    <div class="code-block">
+      <div class="code-header"><span class="fname">toggleAudio()</span><span class="lang-badge">JavaScript</span></div>
+      <pre><span class="kw">async function</span> <span class="fn">toggleAudio</span>() {
+    <span class="kw">if</span> (<span class="var">audioTrack</span>) {
+        <span class="cm">// Track exists: flip enabled. No renegotiation needed.</span>
+        <span class="var">audioTrack</span>.enabled = !<span class="var">audioTrack</span>.enabled;
+    } <span class="kw">else</span> {
+        <span class="cm">// First time: get permission and add to all connections.</span>
+        <span class="kw">const</span> <span class="var">stream</span> = <span class="kw">await</span> navigator.mediaDevices.<span class="fn">getUserMedia</span>({ audio: <span class="kw">true</span> });
+        <span class="var">audioTrack</span> = <span class="var">stream</span>.<span class="fn">getAudioTracks</span>()[<span class="num">0</span>];
+        pcMap.<span class="fn">forEach</span>((<span class="var">pc</span>) => <span class="var">pc</span>.<span class="fn">addTrack</span>(<span class="var">audioTrack</span>, <span class="var">stream</span>));
+        <span class="cm">// onnegotiationneeded fires on each PC → renegotiation is automatic.</span>
+    }
+}</pre>
+    </div>
+
+    <h3>Toggle screen share — removeTrack pattern</h3>
+    <div class="code-block">
+      <div class="code-header"><span class="fname">toggleScreen()</span><span class="lang-badge">JavaScript</span></div>
+      <pre><span class="kw">async function</span> <span class="fn">toggleScreen</span>() {
+    <span class="kw">if</span> (<span class="var">screenTrack</span>) {
+        <span class="cm">// Stop: remove from all connections, then release hardware.</span>
+        pcMap.<span class="fn">forEach</span>((<span class="var">pc</span>) => {
+            <span class="kw">const</span> <span class="var">sender</span> = <span class="var">pc</span>.<span class="fn">getSenders</span>().<span class="fn">find</span>((<span class="var">s</span>) => <span class="var">s</span>.track === <span class="var">screenTrack</span>);
+            <span class="kw">if</span> (<span class="var">sender</span>) <span class="var">pc</span>.<span class="fn">removeTrack</span>(<span class="var">sender</span>);
+        });
+        <span class="var">screenTrack</span>.<span class="fn">stop</span>();
+        <span class="var">screenTrack</span> = <span class="kw">null</span>;
+    } <span class="kw">else</span> {
+        <span class="cm">// Start: acquire and add to all connections.</span>
+        <span class="kw">const</span> <span class="var">stream</span> = <span class="kw">await</span> navigator.mediaDevices.<span class="fn">getDisplayMedia</span>({ video: <span class="kw">true</span> });
+        <span class="var">screenTrack</span> = <span class="var">stream</span>.<span class="fn">getVideoTracks</span>()[<span class="num">0</span>];
+        pcMap.<span class="fn">forEach</span>((<span class="var">pc</span>) => <span class="var">pc</span>.<span class="fn">addTrack</span>(<span class="var">screenTrack</span>, <span class="var">stream</span>));
+        <span class="cm">// Handle user clicking browser's native "Stop sharing" button.</span>
+        <span class="var">screenTrack</span>.onended = () => <span class="fn">toggleScreen</span>();
+    }
+}</pre>
+    </div>
+  </section>
+
+  <section id="new-joiner-sees">
+    <h2>New Joiner Sees Existing Tracks</h2>
+    <p>When C joins and A already has their camera on, C must see A's video immediately upon connection — without A needing to do anything special. This requires one specific action: when A creates a new PC for C, A must add their currently-active tracks to that PC right at creation time.</p>
+    <div class="callout info">
+      <div class="icon">💡</div>
+      <p>Each <code>RTCPeerConnection</code> is independent. A track being on one PC does not mean it is on all PCs. When a new PC is created, it starts empty. You must explicitly add any currently-active tracks to it at the moment of creation.</p>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="fname">createPCWith() — add active tracks to new connection</span><span class="lang-badge">JavaScript</span></div>
+      <pre><span class="kw">function</span> <span class="fn">createPCWith</span>(<span class="var">remoteUser</span>) {
+    <span class="kw">const</span> <span class="var">pc</span> = <span class="kw">new</span> <span class="fn">RTCPeerConnection</span>({ iceServers: [...] });
+    pcMap.<span class="fn">set</span>(<span class="var">remoteUser</span>.socketId, <span class="var">pc</span>);
+
+    <span class="cm">// ... attach event listeners ...</span>
+
+    <span class="cm">// Add any tracks currently active to this new connection.</span>
+    <span class="cm">// This is what makes a new joiner see existing streams immediately.</span>
+    <span class="kw">if</span> (<span class="var">audioTrack</span>) <span class="var">pc</span>.<span class="fn">addTrack</span>(<span class="var">audioTrack</span>, <span class="var">audioStream</span>);
+    <span class="kw">if</span> (<span class="var">videoTrack</span>) <span class="var">pc</span>.<span class="fn">addTrack</span>(<span class="var">videoTrack</span>, <span class="var">videoStream</span>);
+    <span class="kw">if</span> (<span class="var">screenTrack</span>) <span class="var">pc</span>.<span class="fn">addTrack</span>(<span class="var">screenTrack</span>, <span class="var">screenStream</span>);
+    <span class="cm">// Adding these triggers onnegotiationneeded → the SDP offer will include them.</span>
+
+    <span class="kw">return</span> <span class="var">pc</span>;
+}</pre>
+    </div>
+    <div class="ascii-box"><pre>
+  A has camera on. C joins. A receives "user-joined" for C.
+
+  A calls createPCWith(C):
+    videoTrack exists → pc.addTrack(videoTrack, videoStream)
+    onnegotiationneeded fires
+    sendOfferTo(C) → offer SDP includes the video track description
+
+  C receives offer (SDP says "I have a video track"):
+    setRemoteDescription(offer)
+    createAnswer, setLocalDescription, emit answer
+
+  ICE completes. C's pc.ontrack fires. C sees A's video.
+  No extra action from A. No action from C beyond answering.</pre></div>
+  </section>
+
+  <section id="renegotiation">
+    <h2>Renegotiation</h2>
+    <p>Renegotiation is a new offer-answer cycle on an <strong>already-connected</strong> peer connection. It is triggered automatically by the browser whenever the set of tracks changes — when <code>addTrack()</code> or <code>removeTrack()</code> is called on a connected PC. Your <code>onnegotiationneeded</code> handler runs <code>sendOfferTo()</code>, the remote side answers, and the SDP is updated to reflect the new track state.</p>
+    <div class="ascii-box"><pre>
+  RENEGOTIATION SEQUENCE (mid-call track enable)
+
+  You call pc.addTrack(track, stream)
+         |
+         v
+  pc.onnegotiationneeded fires automatically
+         |
+         v
+  your handler checks pc.signalingState === "stable"  (guard)
+         |
+         v
+  sendOfferTo(remoteUser, pc) → new offer-answer cycle
+         |
+         v
+  Remote peer receives new offer, answers it
+         |
+         v
+  ICE may reuse existing path (usually no new ICE needed)
+         |
+         v
+  Remote peer's pc.ontrack fires with the new track</pre></div>
+    <div class="callout warn">
+      <div class="icon">⚠</div>
+      <p><code>onnegotiationneeded</code> can fire multiple times in quick succession if multiple tracks are added in a loop. Always check <code>pc.signalingState === "stable"</code> before proceeding inside the handler — if a previous offer is already in flight, skip this trigger.</p>
+    </div>
+    <div class="callout tip">
+      <div class="icon">✓</div>
+      <p>Renegotiation is what makes the entire toggle system work without any special handling on the receiver side. The receiver does not know a track was toggled — they receive a new offer, answer it, and their <code>ontrack</code> fires with whatever changed. This is the design elegance of WebRTC when used correctly.</p>
+    </div>
+  </section>
+
+</main>
+
+<script>
+  window.addEventListener("scroll", () => {
+    const d = document.documentElement;
+    document.getElementById("progress").style.width = (d.scrollTop / (d.scrollHeight - d.clientHeight) * 100) + "%";
+  });
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        document.querySelectorAll("#sidebar nav a").forEach(l => l.classList.remove("active"));
+        const a = document.querySelector(`#sidebar nav a[href="#${e.target.id}"]`);
+        if (a) a.classList.add("active");
+      }
+    });
+  }, { rootMargin: "0px 0px -70% 0px" });
+  document.querySelectorAll("section[id]").forEach(s => obs.observe(s));
+</script>
+</body>
+</html>
