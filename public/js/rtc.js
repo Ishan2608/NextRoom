@@ -21,10 +21,22 @@ const socket = io();
 
 var userMap = new Map();
 var pcMap = new Map();
+/*
+This Map holds a list of candidates for each remote peer.
+Key:   the remote user's socketId (a string like "XkP2q...")
+Value: an array of ICE candidate objects that arrived too early
+
+Example of what it looks like mid-race:
+  pendingCandidates = {
+    "XkP2q..." => [candidate1, candidate2, candidate3],
+    "Rm9zL..." => [candidate1]
+  }
+*/
+var pendingCandidates = new Map();
 
 const iceConfig = {
   iceServers: [ {urls: 'stun:stun.l.google.com:19302'} ]
-}
+};
 
 /**
   * Called when this user visits the `/room?meetID=` route.
@@ -71,15 +83,56 @@ function createPC(remoteUser){
     };
 
     // Fired Automatically when you call addTrack.
+    /*
+        WHAT HAPPENS WITHOUT THE GUARD
+
+        addTrack(audioTrack) fires onnegotiationneeded
+            → signalingState = "stable" → send offer ✓ → signalingState = "have-local-offer"
+
+        addTrack(videoTrack) fires onnegotiationneeded (milliseconds later)
+            → signalingState = "have-local-offer" → try to send another offer
+            → setLocalDescription() THROWS because an offer is already in flight ✗
+
+        WHAT HAPPENS WITH THE GUARD
+
+        addTrack(audioTrack) fires onnegotiationneeded
+            → signalingState = "stable" → send offer ✓ → signalingState = "have-local-offer"
+
+        addTrack(videoTrack) fires onnegotiationneeded
+            → signalingState = "have-local-offer" → guard triggers → return early (skip)
+
+        ... offer is answered, cycle completes, signalingState = "stable" again ...
+
+        Browser re-fires onnegotiationneeded automatically
+            → signalingState = "stable" → send offer ✓ (now includes both audio + video)
+    */
     pc.onnegotiationneeded = async () => {
-        if (pc.signalingState !== "stable") return; // guard against concurrent triggers
+        // Before doing anything, check whether the connection is in a
+        // "calm" state. "stable" means: no offer is currently in flight,
+        // and we are not in the middle of processing someone else's offer.
+        // It is the only state where creating a new offer is safe.
+        if (pc.signalingState !== "stable") {
+
+            // An offer is already being negotiated. Skip this trigger.
+            // Do NOT retry. Do NOT queue this. Just return.
+            // The browser will fire onnegotiationneeded again once
+            // the current cycle completes and signalingState = "stable".
+            console.log("Negotiation skipped — already negotiating. State:", pc.signalingState);
+            return;
+        }
+        // Safe to proceed. signalingState is "stable", so we are the only
+        // offer in flight. Send it.
         await sendOfferTo(remoteUser, pc);
     };
     
     // Fired Automatically after setLocalDescription();
     pc.onicecandidate = (event) => {
         if (event.candidate){
-            socket.emit("ice-candidate", { candidate: e.candidate, targetSocketId: remoteUser.socketId });
+            socket.emit("ice-candidate", { 
+                candidate: e.candidate, 
+                targetSocketId: remoteUser.socketId,
+                senderUser: {...window.__USER, socketId: socket.id}
+            });
         }
     };
 
@@ -109,6 +162,41 @@ async function sendOfferTo(remoteUser, pc) {
         targetSocketId: remoteUser.socketId, 
         senderUser: {...window.__USER, socketId: socket.id}
     });
+}
+
+/**
+  * Read and store incoming ICE Candidates from User x, only after remoteDescription is set.
+  * Prevents race condition when ICE Candidates arrive before handshake is complete.
+  * Maintains a Queue of candidates for each user.
+*/
+async function flushPendingCandidates(socketId) {
+    // Get the connection we are flushing into.
+    const pc = pcMap.get(socketId);
+
+    // Get all candidates that were stored in the waiting room.
+    // The "?? []" means: if there is no entry for this socketId at all
+    // (no race happened, nobody was queued), use an empty array instead.
+    // That way the function is always safe to call, even if the queue is empty.
+    const queue = pendingCandidates.get(socketId) ?? [];
+
+    // IMPORTANT: delete the waiting room BEFORE processing candidates.
+    // Why? Because addIceCandidate() is async. If a new candidate arrives
+    // while we are in the middle of flushing, the handler above would see
+    // that remoteDescription is now set and take the safe path — no double-queue.
+    pendingCandidates.delete(socketId);
+
+    // Now loop through every candidate that was waiting and apply them.
+    for (const candidate of queue) {
+        try {
+            await pc.addIceCandidate(new RTCIceCandidate(candidate));
+        } catch (e) {
+            // A candidate failing here is usually harmless — the browser
+            // will find other paths. Log it but do not stop the loop.
+            console.warn("ICE flush error on one candidate:", e);
+        }
+    }
+    // After this function returns, the waiting room is gone and all
+    // candidates have been applied. The race window is closed.
 }
 
 /**
@@ -229,6 +317,7 @@ socket.on("offer", async ({offer, senderUser})=>{
     const pc = pcMap.get(senderUser.socketId);
     // Save its offer into Remote Description.
     await pc.setRemoteDescription(new RTCSessionDescription(offer));
+    await flushPendingCandidates(senderUser.socketId);
 
     // Create your answer and save in Local Description.
     const answer = await pc.createAnswer();
@@ -252,7 +341,17 @@ socket.on("answer", async ({answer, senderUser})=>{
     console.log(`SOCKET:ON:ANSWER: From ${username}`);
     // You created a map entry for this user in get-others.
     const pc = pcMap.get(senderUser.socketId);
-    if (pc) await pc.setRemoteDescription(new RTCSessionDescription(answer));
+    if (!pc) return;
+    // "have-local-offer" is the ONLY state where receiving an answer makes sense.
+    // It means: we sent an offer and we are actively waiting for their answer.
+    // Any other state — "stable", "have-remote-offer", "closed" — means
+    // this answer is unexpected. Applying it would throw. Ignore it instead.
+    if (pc.signalingState !== "have-local-offer") {
+        console.warn("Unexpected answer received. Current state:", pc.signalingState, "— ignoring.");
+        return; // Do nothing. Do not throw. Just quietly discard it.
+    }
+    await pc.setRemoteDescription(new RTCSessionDescription(answer));
+    await flushPendingCandidates(senderUser.socketId);
 });
 
 /**
@@ -269,13 +368,24 @@ socket.on("ice-candidate", async ({candidate, senderUser})=>{
     console.log(`SOCKET:ON:ICE-CANDIDATE: From ${username}`);
     
     const pc = pcMap.get(socketId);
-    if(pc && candidate){
+    if (!pc || !candidate) return;
+
+    // pc.remoteDescription is null until setRemoteDescription() has been called.
+    if(pc.remoteDescription){
         try{
             await pc.addIceCandidate(new RTCIceCandidate(candidate));
         } catch (e) {
             console.warn("ICE candidate error (possible race condition):", e);
         }
+    } else {
+        // If there is no waiting room for this person yet, create one.
+        if(!pendingCandidates.has(senderUser.socketId)){
+            pendingCandidates.set(senderUser.socketId, [])
+        }
+
+        pendingCandidates.get(senderUser.socketId).push(candidate);
     }
+    
 });
 
 /**
