@@ -38,6 +38,15 @@ const iceConfig = {
   iceServers: [ {urls: 'stun:stun.l.google.com:19302'} ]
 };
 
+// Camera and microphone
+const camStream = null;
+const videoTrack = null;
+const audioTrack = null;
+
+// Screen capture
+const screenStream = null
+const screenTrack = null;
+
 /**
   * Called when this user visits the `/room?meetID=` route.
   * Signals server through emit:join-room  to let server know it needs to be added to a room.
@@ -141,6 +150,13 @@ function createPC(remoteUser){
         if (pc.iceConnectionState === "failed") pc.restartIce();
     };
 
+    // Add any tracks currently active to this new connection.
+    // This is what makes a new joiner see existing streams immediately.
+    if (audioTrack) pc.addTrack(audioTrack, audioStream);
+    if (videoTrack) pc.addTrack(videoTrack, videoStream);
+    if (screenTrack) pc.addTrack(screenTrack, screenStream);
+    // Adding these triggers onnegotiationneeded → the SDP offer will include them.
+
     // Send existing streams so that newly joined user can see shared tracks if any.
     return pc;
 }
@@ -231,7 +247,7 @@ socket.on("get-others", (others)=>{
 
         // Create Peer Connection With Them.
         const pc = createPC(otherUser);
-        sendOfferTo(user, pc);
+        sendOfferTo(otherUser, pc);
     }
 });
 
@@ -270,7 +286,7 @@ socket.on("user-left", (remoteUserData)=>{
     pcMap.delete(socketId);
 
     // Update UI.
-    removeParticipantFromUI(remoteUserData);
+    removeParticipantFromUI(remoteUserData.socketId);
 });
 
 /**
@@ -425,5 +441,6 @@ function handleUserLeft(){
 }
 
 export {
-    userMap, joinRoom, handleUserLeft, sendMessage
+    userMap, pcMap, joinRoom, handleUserLeft, sendMessage,
+    camStream, audioTrack, videoTrack, screenStream, screenTrack
 }

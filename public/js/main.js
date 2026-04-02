@@ -13,7 +13,8 @@ import {
 } from './utils.js';
 
 import {
-    userMap, joinRoom, handleUserLeft, sendMessage
+    userMap, pcMap, joinRoom, handleUserLeft, sendMessage,
+    camStream, audioTrack, videoTrack, screenStream, screenTrack
 } from './rtc.js';
 
 /**
@@ -162,11 +163,26 @@ $(document).ready(function (){
             }
         });
 
-        $("#mic-btn").on("click", ()=>{});
-        $("#video-btn").on("click", ()=>{});
-        $("#screen-btn").on("click", ()=>{});
+        $("#mic-btn").on("click", function (){
+            $("#mic-btn").toggleClass('active');
+            // toggleAudio(audioTrack, pcMap);
+        });
+        $("#video-btn").on("click", function (){
+            $("#video-btn").toggleClass('active');
+            // toggleVideo(videoTrack, pcMap);
+        });
+        $("#screen-btn").on("click", function (){
+            $("#screen-btn").toggleClass('active');
+            // toggleScreen(screenTrack, pcMap);
+        });
+        
         $("#menu-btn").on("click", ()=>{
             showParticipantsModal(userMap);
+        });
+
+        $(".participants-modal-overlay, #close-participants-modal").on("click", function(){
+            $(".participants-modal-overlay").fadeOut();
+            $(".participants-modal").fadeOut();
         });
 
     } 
