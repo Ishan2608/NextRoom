@@ -47,6 +47,34 @@ const audioTrack = null;
 const screenStream = null
 const screenTrack = null;
 
+/*
+Toggling Tracks On and Off:
+Two operations are both commonly called "toggling", but they behave differently in WebRTC.
+
+1. track.enabled = false / true:
+Pauses the track without removing it from the connection. 
+No renegotiation. The slot in the SDP stays reserved. 
+Re-enabling is instant. Use this for muting mic or temporarily disabling camera.
+
+2. pc.removeTrack(sender)
+Fully removes the track from the connection. 
+onnegotiationneeded fires and a new offer-answer cycle runs. 
+Use this when stopping screen share and switching back to camera.
+*/
+
+async function toggleAudio(){
+    
+}
+
+async function toggleVideo(){
+    
+}
+
+async function toggleScreen() {
+    
+}
+
+
 /**
   * Called when this user visits the `/room?meetID=` route.
   * Signals server through emit:join-room  to let server know it needs to be added to a room.
@@ -80,15 +108,10 @@ function createPC(remoteUser){
     // Create mapping to other user and its PC Object.
     pcMap.set(remoteUser.socketId, pc);
 
-    // If a local stream is present, add it and send to others.
-    if(window.__LOCALSTREAM){
-        windw.__LOCALSTREAM.getTracks().forEach(track => pd.addTrack(track, window.__LOCALSTREAM));
-    }
-
     // Fired automatically when other peer calls `addTrack()`
     pc.ontrack = (event) => {
         const vid = document.getElementById(`video-${remoteUser.socketId}`);
-        if (vid && e.streams[0]) vid.srcObject = e.streams[0];
+        if (vid && e.streams[0]) vid.srcObject = event.streams[0];
     };
 
     // Fired Automatically when you call addTrack.

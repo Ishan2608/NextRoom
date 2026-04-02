@@ -133,67 +133,9 @@ function displayChatMessage(data){
     chatCont.scrollTop(chatCont[0].scrollHeight);
 }
 
-/*
-Toggling Tracks On and Off:
-Two operations are both commonly called "toggling", but they behave differently in WebRTC.
-
-1. track.enabled = false / true:
-Pauses the track without removing it from the connection. 
-No renegotiation. The slot in the SDP stays reserved. 
-Re-enabling is instant. Use this for muting mic or temporarily disabling camera.
-
-2. pc.removeTrack(sender)
-Fully removes the track from the connection. 
-onnegotiationneeded fires and a new offer-answer cycle runs. 
-Use this when stopping screen share and switching back to camera.
-*/
-
-function toggleAudio(audioTrack, pcMap){
-    if (audioTrack){
-        // Track exists: flip enabled. No renegotiation needed.
-        audioTrack.enabled = !audioTrack.enabled;
-    }else{
-        // First time: get permission and add to all connections.
-        const mediaStream = navigator.mediaDevices.getUserMedia({audio: true, video: false});
-        const audioTrack = mediamediaStream.getAudioTracks()[0];
-        pcMap.forEach((pc) => pc.addTrack(audioTrack, mediaStream));
-        // onnegotiationneeded fires on each PC → renegotiation is automatic.
-    }
-}
-
-function toggleVideo(videoTrack, pcMap){
-    if(videoTrack){
-        videoTrack.enabled = !videoTrack.enabled;
-    } else {
-        const mediaStream = navigator.mediaDevices.getUserMedia({audio: false, video: true});
-        const videoTrack = mediaStream.getVideoTracks()[0];
-        pcMap.forEach((pc) => pc.addTrack(videoTrack, mediaStream))
-    }
-}
-
-async function toggleScreen(screenTrack, pcMap) {
-    if (screenTrack) {
-        // Stop: remove from all connections, then release hardware.
-        pcMap.forEach((pc) => {
-            const sender = pc.getSenders().find((s) => s.track === screenTrack);
-            if (sender) pc.removeTrack(sender);
-        });
-        screenTrack.stop();
-        screenTrack = null;
-    } else {
-        // Start: acquire and add to all connections.
-        const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-        screenTrack = stream.getVideoTracks()[0];
-        pcMap.forEach((pc) => pc.addTrack(screenTrack, stream));
-        // Handle user clicking browser's native "Stop sharing" button.
-        screenTrack.onended = () => toggleScreen();
-    }
-}
-
 export {
     showModal, getUserInitials, 
     generateMeetCode, validateCode, getURLParameter,
     addParticipantToUI, removeParticipantFromUI, showParticipantsModal,
-    displayChatMessage,
-    toggleAudio, toggleVideo, toggleScreen
+    displayChatMessage
 };
