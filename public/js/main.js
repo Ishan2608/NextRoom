@@ -165,16 +165,13 @@ $(document).ready(function (){
         });
 
         $("#mic-btn").on("click", function (){
-            $("#mic-btn").toggleClass('active');
-            toggleAudio(audioTrack, pcMap);
+            toggleAudio();
         });
         $("#video-btn").on("click", function (){
-            $("#video-btn").toggleClass('active');
-            toggleVideo(videoTrack, pcMap);
+            toggleVideo();
         });
         $("#screen-btn").on("click", function (){
-            $("#screen-btn").toggleClass('active');
-            toggleScreen(screenTrack, pcMap);
+            toggleScreen();
         });
         
         $("#menu-btn").on("click", ()=>{

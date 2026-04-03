@@ -39,13 +39,13 @@ const iceConfig = {
 };
 
 // Camera and microphone
-const camStream = null;
-const videoTrack = null;
-const audioTrack = null;
+var camStream = null;
+var videoTrack = null;
+var audioTrack = null;
 
 // Screen capture
-const screenStream = null
-const screenTrack = null;
+var screenStream = null
+var screenTrack = null;
 
 /*
 Toggling Tracks On and Off:
@@ -62,16 +62,229 @@ onnegotiationneeded fires and a new offer-answer cycle runs.
 Use this when stopping screen share and switching back to camera.
 */
 
-async function toggleAudio(){
-    
+/**
+ * Emit a signal to all peers in the room to update their UI
+ * when a track is turned on or off.
+ * @param {"on"|"off"} type
+ * @param {"audio"|"video"|"screen"} track
+ */
+function emitSignal(type, track) {
+    socket.emit("signal", {
+        type: type,
+        track: track,
+        fromUser: { ...window.__USER, socketId: socket.id },
+        toMeetCode: window.__MEETCODE
+    });
 }
 
-async function toggleVideo(){
-    
+/**
+  * If Audio is there, play it, otherwise, disable it.
+  * Update the UI of Control Button. 
+  * Uses track.enabled because muting audio does not need renegotiation —
+  * the slot in the SDP stays reserved, the track just sends silence.
+*/
+async function toggleAudio() {
+    if (!audioTrack) {
+        // No mic stream yet — request it for the first time.
+        try {
+            const micStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+            audioTrack = micStream.getAudioTracks()[0];
+            // If camStream already exists (camera was turned on first), merge this audio
+            // track into it so both tracks share the same stream object in peer connections.
+            if (!camStream) camStream = micStream;
+            // Add the new track to every existing peer connection.
+            pcMap.forEach((pc) => pc.addTrack(audioTrack, camStream));
+        } catch (err) {
+            console.error("toggleAudio: Could not get microphone:", err);
+            return;
+        }
+        // First acquisition = turn ON. Do not fall through to the toggle logic.
+        $("#mic-btn").addClass("active");
+        emitSignal("on", "audio");
+        return;
+    }
+
+    const isActive = audioTrack.enabled;  // true = currently ON, we want to turn it OFF.
+
+    if (isActive) {
+        // Turn OFF — mute but keep track alive in the connection.
+        audioTrack.enabled = false;
+        $("#mic-btn").removeClass("active");
+        emitSignal("off", "audio");
+    } else {
+        // Turn ON — unmute.
+        audioTrack.enabled = true;
+        $("#mic-btn").addClass("active");
+        emitSignal("on", "audio");
+    }
 }
 
+/**
+  * If Video is there, play it, otherwise, disable it.
+  * If screenTrack is currently sharing, stop it first and replace with camera.
+  * Fully stops and nulls the track on turn-off so re-share re-acquires a live track.
+*/
+async function toggleVideo() {
+    if (!videoTrack) {
+        // No camera track yet — request it for the first time, or re-acquire after stop.
+        try {
+            const vidStream = await navigator.mediaDevices.getUserMedia({ audio: false, video: true });
+            videoTrack = vidStream.getVideoTracks()[0];
+            if (!camStream) {
+                // No stream yet — use the video stream as camStream.
+                camStream = vidStream;
+            } else {
+                // Audio was turned on first — camStream already exists as an audio-only
+                // stream. Add the video track into it so both tracks are grouped together
+                // in the same stream. Peers receive event.streams[0] in ontrack, and that
+                // stream must contain all tracks for srcObject assignment to show video.
+                camStream.addTrack(videoTrack);
+            }
+
+            // If screen was being shared, stop it and replace with camera on all peers.
+            if (screenTrack) {
+                screenTrack.stop();
+                pcMap.forEach((pc) => {
+                    const sender = pc.getSenders().find(s => s.track === screenTrack);
+                    if (sender) sender.replaceTrack(videoTrack);
+                });
+                screenTrack = null;
+                screenStream = null;
+                $("#screen-btn").removeClass("active");
+                emitSignal("off", "screen");
+            } else {
+                // No screen share was active.
+                // Use replaceTrack if a video sender slot already exists (avoids duplicate senders).
+                // Only call addTrack (which triggers renegotiation) if no slot exists at all.
+                pcMap.forEach((pc) => {
+                    const existingSender = pc.getSenders().find(s => s.track?.kind === "video");
+                    if (existingSender) {
+                        existingSender.replaceTrack(videoTrack);
+                    } else {
+                        pc.addTrack(videoTrack, camStream);
+                    }
+                });
+            }
+
+            // Mirror local camera feed into the pinned (self) video element.
+            const localVid = document.getElementById("vid-pinned-video");
+            if (localVid) localVid.srcObject = camStream;
+
+        } catch (err) {
+            console.error("toggleVideo: Could not get camera:", err);
+            return;
+        }
+        // First acquisition = turn ON. Do not fall through to the toggle logic.
+        $("#video-btn").addClass("active");
+        $("#vid-pinned-overlay").fadeOut();
+        emitSignal("on", "video");
+        return;
+    }
+
+    // videoTrack already exists — it is currently ON (enabled). Turn it off.
+    // We stop the track fully (camera light goes dark) and null it out so the
+    // next click goes through the acquisition path above and re-adds the track.
+    // Simply setting .enabled = false is NOT enough: the sender still holds the
+    // old stopped track and addTrack never gets called on re-share, leaving the
+    // peer with no new stream to display (the gray box bug).
+    videoTrack.stop();
+    pcMap.forEach((pc) => {
+        const sender = pc.getSenders().find(s => s.track === videoTrack);
+        // null-replace keeps the sender slot alive so re-enabling later can use
+        // replaceTrack instead of addTrack, avoiding duplicate senders.
+        if (sender) sender.replaceTrack(null);
+    });
+    videoTrack = null;
+
+    // Clear local self-preview.
+    const localVid = document.getElementById("vid-pinned-video");
+    if (localVid) { localVid.pause(); localVid.srcObject = null; }
+
+    $("#video-btn").removeClass("active");
+    $("#vid-pinned-overlay").fadeIn();
+    emitSignal("off", "video");
+}
+
+/**
+  * Start or stop screen sharing.
+  * Uses pc.removeTrack + addTrack (full renegotiation) because screen share
+  * is a completely different MediaStreamTrack — you cannot just flip .enabled.
+  * If camera video was active, it is replaced while screen share runs,
+  * then restored when screen share ends.
+*/
 async function toggleScreen() {
-    
+    const isActive = screenTrack !== null;
+
+    if (isActive) {
+        // --- STOP SCREEN SHARE ---
+        screenTrack.stop();
+
+        // Remove the screen track sender from every peer connection.
+        pcMap.forEach((pc) => {
+            const sender = pc.getSenders().find(s => s.track === screenTrack);
+            if (sender) {
+                if (videoTrack) {
+                    // Camera is active — swap back to it seamlessly, no renegotiation.
+                    sender.replaceTrack(videoTrack);
+                } else {
+                    // No camera — null out the track to go silent but keep the sender
+                    // slot alive. removeTrack would trigger full renegotiation and kill
+                    // the slot, making re-share require addTrack again unnecessarily.
+                    sender.replaceTrack(null);
+                }
+            }
+        });
+
+        screenTrack = null;
+        screenStream = null;
+
+        // Restore local self-preview to camera if it was on, otherwise blank it.
+        const localVid = document.getElementById("vid-pinned-video");
+        if (videoTrack && videoTrack.enabled) {
+            if (localVid) localVid.srcObject = camStream;
+            $("#vid-pinned-overlay").fadeOut();
+        } else {
+            if (localVid) { localVid.pause(); localVid.srcObject = null; }
+            $("#vid-pinned-overlay").fadeIn();
+        }
+
+        $("#screen-btn").removeClass("active");
+        emitSignal("off", "screen");
+
+    } else {
+        // --- START SCREEN SHARE ---
+        try {
+            screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+            screenTrack = screenStream.getVideoTracks()[0];
+
+            // When user stops share via the browser's own "Stop sharing" button,
+            // call toggleScreen again to clean up state consistently.
+            screenTrack.onended = () => toggleScreen();
+
+            pcMap.forEach((pc) => {
+                // Prefer replaceTrack on an existing video sender slot (no renegotiation,
+                // no duplicate senders). Only addTrack if no video sender exists at all.
+                const existingSender = pc.getSenders().find(s => s.track?.kind === "video");
+                if (existingSender) {
+                    existingSender.replaceTrack(screenTrack);
+                } else {
+                    pc.addTrack(screenTrack, screenStream);
+                }
+            });
+
+            // Show screen feed in the local self-preview element.
+            const localVid = document.getElementById("vid-pinned-video");
+            if (localVid) localVid.srcObject = screenStream;
+            $("#vid-pinned-overlay").fadeOut();
+
+            $("#screen-btn").addClass("active");
+            emitSignal("on", "screen");
+
+        } catch (err) {
+            // User cancelled the picker or permission was denied — not a real error.
+            console.warn("toggleScreen: Screen share not started:", err);
+        }
+    }
 }
 
 
@@ -99,9 +312,19 @@ function joinRoom(){
 /**
   * Create a PC Object using default configs.
   * Adds the PC object to PC Map, mapping to a remote user.
-  * Defines each event listerner of PC Object.
+  * Defines each event listener of PC Object.
+  *
+  * @param remoteUser  - the remote peer's user object
+  * @param isCallee    - true when WE are receiving the offer (user-joined path).
+  *                      false when WE are sending the offer (get-others path).
+  *
+  * When isCallee = true, we must NOT call sendOfferTo from onnegotiationneeded.
+  * Adding our local tracks to the PC still queues them correctly — they will be
+  * included in the answer SDP that we send back when the remote's offer arrives.
+  * Sending a competing offer (collision) causes both sides' signalingState guards
+  * to silently drop one negotiation, leaving tracks missing on one side.
 */
-function createPC(remoteUser){
+function createPC(remoteUser, isCallee = false){
     // Create a new WebRTC object, for remote user.
     const pc = new RTCPeerConnection(iceConfig);
 
@@ -110,50 +333,21 @@ function createPC(remoteUser){
 
     // Fired automatically when other peer calls `addTrack()`
     pc.ontrack = (event) => {
-        const vid = document.getElementById(`video-${remoteUser.socketId}`);
-        if (vid && e.streams[0]) vid.srcObject = event.streams[0];
+        // ID must match what addParticipantToUI() renders: "p-video-${socketId}"
+        const vid = document.getElementById(`p-video-${remoteUser.socketId}`);
+        if (vid && event.streams[0]) vid.srcObject = event.streams[0];
     };
 
-    // Fired Automatically when you call addTrack.
-    /*
-        WHAT HAPPENS WITHOUT THE GUARD
-
-        addTrack(audioTrack) fires onnegotiationneeded
-            → signalingState = "stable" → send offer ✓ → signalingState = "have-local-offer"
-
-        addTrack(videoTrack) fires onnegotiationneeded (milliseconds later)
-            → signalingState = "have-local-offer" → try to send another offer
-            → setLocalDescription() THROWS because an offer is already in flight ✗
-
-        WHAT HAPPENS WITH THE GUARD
-
-        addTrack(audioTrack) fires onnegotiationneeded
-            → signalingState = "stable" → send offer ✓ → signalingState = "have-local-offer"
-
-        addTrack(videoTrack) fires onnegotiationneeded
-            → signalingState = "have-local-offer" → guard triggers → return early (skip)
-
-        ... offer is answered, cycle completes, signalingState = "stable" again ...
-
-        Browser re-fires onnegotiationneeded automatically
-            → signalingState = "stable" → send offer ✓ (now includes both audio + video)
-    */
     pc.onnegotiationneeded = async () => {
-        // Before doing anything, check whether the connection is in a
-        // "calm" state. "stable" means: no offer is currently in flight,
-        // and we are not in the middle of processing someone else's offer.
-        // It is the only state where creating a new offer is safe.
-        if (pc.signalingState !== "stable") {
+        // Callees never initiate — the new joiner (caller) always sends the first offer.
+        // If we fire an offer here as a callee, it collides with the caller's offer and
+        // one side silently drops its negotiation, leaving tracks undelivered.
+        if (isCallee) return;
 
-            // An offer is already being negotiated. Skip this trigger.
-            // Do NOT retry. Do NOT queue this. Just return.
-            // The browser will fire onnegotiationneeded again once
-            // the current cycle completes and signalingState = "stable".
+        if (pc.signalingState !== "stable") {
             console.log("Negotiation skipped — already negotiating. State:", pc.signalingState);
             return;
         }
-        // Safe to proceed. signalingState is "stable", so we are the only
-        // offer in flight. Send it.
         await sendOfferTo(remoteUser, pc);
     };
     
@@ -161,7 +355,7 @@ function createPC(remoteUser){
     pc.onicecandidate = (event) => {
         if (event.candidate){
             socket.emit("ice-candidate", { 
-                candidate: e.candidate, 
+                candidate: event.candidate, 
                 targetSocketId: remoteUser.socketId,
                 senderUser: {...window.__USER, socketId: socket.id}
             });
@@ -173,14 +367,13 @@ function createPC(remoteUser){
         if (pc.iceConnectionState === "failed") pc.restartIce();
     };
 
-    // Add any tracks currently active to this new connection.
-    // This is what makes a new joiner see existing streams immediately.
-    if (audioTrack) pc.addTrack(audioTrack, audioStream);
-    if (videoTrack) pc.addTrack(videoTrack, videoStream);
+    // Add this user's currently active local tracks to the new connection.
+    // For callee path: these tracks are included in our answer SDP automatically.
+    // For caller path: addTrack fires onnegotiationneeded which sends the offer.
+    if (audioTrack) pc.addTrack(audioTrack, camStream);
+    if (videoTrack) pc.addTrack(videoTrack, camStream);
     if (screenTrack) pc.addTrack(screenTrack, screenStream);
-    // Adding these triggers onnegotiationneeded → the SDP offer will include them.
 
-    // Send existing streams so that newly joined user can see shared tracks if any.
     return pc;
 }
 
@@ -269,7 +462,8 @@ socket.on("get-others", (others)=>{
         addParticipantToUI(otherUser);
 
         // Create Peer Connection With Them.
-        const pc = createPC(otherUser);
+        // isCallee = false: WE are the new joiner, so WE send the offer to each existing user.
+        const pc = createPC(otherUser, false);
         sendOfferTo(otherUser, pc);
     }
 });
@@ -292,7 +486,8 @@ socket.on('user-joined', (remoteUserData)=>{
     addParticipantToUI(remoteUserData);
 
     // Create Peer Connection with It.
-    createPC(remoteUserData); // Since other sends offer, just create a map for them. Nothing else.
+    // isCallee = true: the new joiner (C) will send us the offer. We must not send one.
+    createPC(remoteUserData, true);
 });
 
 socket.on("user-left", (remoteUserData)=>{
@@ -434,8 +629,57 @@ socket.on("ice-candidate", async ({candidate, senderUser})=>{
   * fromUser = {id, username, email, socketId}
   * toMeetCode = 6 digit code for room.
 */
+
+/* Participant UI Element.
+<div class="participant"
+    id="p-container-${user.socketId}"
+    data-rendered-socket="${user.socketId}"
+    data-active-socket="${user.socketId}">
+    <video autoplay playsinline id="p-video-${user.socketId}"></video>
+    <div class="participant-overlay">
+        <div class="participant-profile">${ins}</div>
+        <div class="participant-name">${user.username}</div>
+    </div>
+</div>
+*/
 socket.on("signal", (signal)=>{
-    console.log(`SOCKET:ON:SIGNAL: From ${username}`);
+    const {type, track, fromUser, toMeetCode} = signal;
+    console.log(`SOCKET:ON:SIGNAL: From ${fromUser.username}`);
+
+    const remoteUserDiv = $(`#p-container-${fromUser.socketId}`);
+    // [0] gets the raw DOM element — .pause() and .srcObject are native DOM APIs,
+    // not jQuery methods. Calling them on a jQuery wrapper silently does nothing.
+    const remoteUserVideo = remoteUserDiv.find(`#p-video-${fromUser.socketId}`)[0];
+    const remoteUserOverlay = remoteUserDiv.find(`#p-overlay-${fromUser.socketId}`);
+    
+    if(track === "audio"){
+        // No visual change needed for audio on/off — could add a muted icon here later.
+        if (type == "off"){}
+        else if (type == "on"){}
+    }
+    if(track === "video"){
+        if (type == "off"){
+            // Detach the stream and show the profile overlay.
+            remoteUserVideo.pause();
+            remoteUserVideo.srcObject = null;
+            remoteUserOverlay.fadeIn();
+        }
+        else if (type == "on"){
+            // Stream will arrive via ontrack automatically — just hide the overlay.
+            remoteUserOverlay.fadeOut();
+        }
+    }
+    if(track === "screen"){
+        if (type == "off"){
+            remoteUserVideo.pause();
+            remoteUserVideo.srcObject = null;
+            remoteUserOverlay.fadeIn();
+        }
+        else if (type == "on"){
+            remoteUserOverlay.fadeOut();
+        }
+    }
+    
 });
 
 /**
@@ -450,11 +694,21 @@ function handleUserLeft(){
     });
     pcMap.clear();
 
-    if (window.__LOCALSTREAM){
-        window.__LOCALSTREAM.getTracks().forEach(track => track.stop());
-        window.__LOCALSTREAM = null;
-        console.log("RTC:CLEANUP | Local media tracks stopped");
+    // Stop all local media tracks so the camera/mic light turns off.
+    if (camStream) {
+        camStream.getTracks().forEach(track => track.stop());
+        camStream = null;
+        audioTrack = null;
+        videoTrack = null;
+        console.log("RTC:CLEANUP | Camera and microphone tracks stopped");
     }
+    if (screenStream) {
+        screenStream.getTracks().forEach(track => track.stop());
+        screenStream = null;
+        screenTrack = null;
+        console.log("RTC:CLEANUP | Screen share tracks stopped");
+    }
+
     userMap.clear();
     window.__MEETCODE = null;
 
@@ -465,5 +719,6 @@ function handleUserLeft(){
 
 export {
     userMap, pcMap, joinRoom, handleUserLeft, sendMessage,
-    camStream, audioTrack, videoTrack, screenStream, screenTrack
+    camStream, audioTrack, videoTrack, screenStream, screenTrack,
+    toggleAudio, toggleVideo, toggleScreen
 }

@@ -55,7 +55,7 @@ function addParticipantToUI(user){
             data-rendered-socket="${user.socketId}"
             data-active-socket="${user.socketId}">
             <video autoplay playsinline id="p-video-${user.socketId}"></video>
-            <div class="participant-overlay">
+            <div class="participant-overlay" id="p-overlay-${user.socketId}">
                 <div class="participant-profile">${ins}</div>
                 <div class="participant-name">${user.username}</div>
             </div>

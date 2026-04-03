@@ -35,13 +35,9 @@ function getUsersInRoom(meetCode) {
     return Array.from(room.values());
 }
 
-// TODO: Export a function: initSocket(io)
-// All socket logic goes inside this function.
-// server.js calls initSocket(io) after creating the io instance.
-
 function initSocket(io) {
 
-    // TODO: Listen for a new socket connection.
+    
     io.on("connection", (socket) => {
         // Frontend ends a socket object on connection event, through which that frontend is uniquely identified.
         console.log(`SOCKET-EVENT:ON:CONNECTION: Connected to socket = ${socket.id}`);
@@ -50,7 +46,6 @@ function initSocket(io) {
         // ROOM EVENTS
         // ----------------------------------------------------------
 
-        // TODO: Listen for "join-room" on this socket.
         socket.on("join-room", ({ meetCode, id, username, email }) => {
             // Put socket into the socket.io room.
             socket.join(meetCode); // this puts the socket into a named room.
