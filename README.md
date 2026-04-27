@@ -44,27 +44,23 @@ Next Room utilizes a Mesh Topology. When a new participant joins, every existing
 ```bash
 git clone https://github.com/Ishan2608/NextRoom.git
 cd next-room
-
 ```
-
 
 2. Install dependencies:
 ```bash
 npm install
-
 ```
-
 
 3. Start the server:
 ```bash
 npm start
-
 ```
-
+```bash
+npm run dev
+```
 
 4. Open your browser and navigate to http://localhost:3000.
 
 ## Contribution
-
 
 This project was built as part of a deep dive into low-level WebRTC concepts and real-time system design. Feel free to fork the repo and submit pull requests for features like screen sharing or recording.

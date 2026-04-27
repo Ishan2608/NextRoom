@@ -41,7 +41,7 @@ Each call returns a brand new `MediaStream`. This is important: when restarting 
 All of these are called on your `localStream` variable.
 
 | Method | Arguments | Returns | Description |
-|---|---|---|---|
+|--------|-----------|---------|-------------|
 | `.getVideoTracks()` | none | `Array<MediaStreamTrack>` | All video tracks currently in the stream |
 | `.getAudioTracks()` | none | `Array<MediaStreamTrack>` | All audio tracks currently in the stream |
 | `.getTracks()` | none | `Array<MediaStreamTrack>` | All tracks regardless of kind |
@@ -70,7 +70,7 @@ These are called on the individual track object, not on the stream.
 This is the most important concept when building media controls.
 
 | Behaviour | `.enabled = false` | `.stop()` |
-|---|---|---|
+|-----------|--------------------|-----------|
 | Camera LED | Still ON | Turns OFF |
 | Data flowing | No | No |
 | Track recoverable | Yes — flip `.enabled = true` | No — must create a brand new track |
@@ -106,7 +106,7 @@ videoEl.play();
 `localStream` starts as `null` on every page load. Its contents change as the user interacts with the controls.
 
 | Scenario | localStream | Video Track state | Audio Track state |
-|---|---|---|---|
+|----------|-------------|-------------------|-------------------|
 | Page just loaded | `null` | absent | absent |
 | Video ON, Audio OFF | MediaStream | `readyState: "live"` | absent |
 | Audio ON, Video OFF | MediaStream | absent | `enabled: true` |
