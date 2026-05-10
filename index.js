@@ -31,6 +31,7 @@ app.get("/room", authMiddleware, (req, res) => {
   // Route: <url>/room.html?meetID=<6_digit_number>
   res.sendFile(path.join(__dirname, "public", "room.html"));
 });
+
 app.use(express.static(path.join(__dirname, "public")));
 
 // Home Page

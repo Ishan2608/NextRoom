@@ -1,5 +1,7 @@
 ﻿# Next Room | WebRTC Video Conferencing
 
+> Built By Human
+
 Next Room is a production-ready, peer-to-peer video meeting platform built with WebRTC, Socket.io, and Node.js. It features a custom mesh network architecture allowing multiple users to connect, chat, and share media in real-time without external plugins.
 
 ## Key Features
