@@ -126,12 +126,12 @@ function initSocket(io) {
         socket.on("offer", ({ offer, targetSocketId, senderUser }) => {
             console.log(`SOCKET-EVENT:ON:OFFER: Received offer from ${senderUser.username} aimed at ${targetSocketId}`);
             socket.to(targetSocketId).emit("offer", { offer, senderUser });
-        });
+        }); // <- socket.on("offer");
 
         socket.on("answer", ({ answer, targetSocketId, senderUser }) => {
             console.log(`SOCKET-EVENT:ON:ANSWER: Received answer from ${senderUser.username} aimed at ${targetSocketId}`);
             socket.to(targetSocketId).emit("answer", { answer, senderUser });
-        });
+        }); // <- socket.on("answer");
         
         socket.on("ice-candidate", ({ candidate, targetSocketId, senderUser }) => {
             socket.to(targetSocketId).emit("ice-candidate", { candidate, senderUser });
